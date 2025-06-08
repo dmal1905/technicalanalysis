@@ -145,6 +145,19 @@ st.markdown("""
 if 'selected_exchange' not in st.session_state:
     st.session_state.selected_exchange = 'NSE'
 
+def get_stock_lists_for_exchange(exchange):
+    """Filter stock lists based on the selected exchange."""
+    if exchange == 'NSE':
+        return {k: v for k, v in STOCK_LISTS.items() if k in [
+            'NIFTY FNO', 'NIFTY 50', 'NIFTY 200', 'NIFTY 500', 'ALL STOCKS'
+        ]}
+    else:  # BSE
+        return {k: v for k, v in STOCK_LISTS.items() if k in [
+            'BSE 500', 'BSE Large Cap Index', 'BSE Mid Cap Index', 
+            'BSE Small Cap Index', 'BSE 400 MidSmallCap', 
+            'BSE 250 LargeMidCap', 'BSE ALL STOCKS'
+        ]}
+
 # Header
 st.markdown("""
     <div class="header">
@@ -175,7 +188,7 @@ with st.sidebar:
     """)
 
 # Main Content
-tabs = st.tabs(["Stock Screener", "Advanced Tools"])
+tabs = st.tabs(["Stock Screener"])
 
 with tabs[0]:
     # Exchange Selection
@@ -260,9 +273,10 @@ with tabs[0]:
     col1, col2 = st.columns(2)
     
     with col1:
+        available_lists = get_stock_lists_for_exchange(st.session_state.selected_exchange)
         selected_list = st.selectbox(
             "Select Stock List",
-            list(STOCK_LISTS.keys()),
+            list(available_lists.keys()),
             help="Choose a list of stocks to analyze"
         )
     
@@ -278,33 +292,12 @@ with tabs[0]:
 
     # Start Screening Button
     if st.button("Start Screening", use_container_width=True):
-        tokens = STOCK_LISTS.get(selected_list, [])
+        available_lists = get_stock_lists_for_exchange(st.session_state.selected_exchange)
+        tokens = available_lists.get(selected_list, [])
         if not tokens:
             st.warning(f"No stocks found for {selected_list}.")
         else:
             with st.spinner("Analyzing stocks..."):
                 screened_stocks = fetch_screened_stocks(tokens, strategy)
             df = clean_and_display_data(screened_stocks, strategy)
-            safe_display(df, strategy)
-
-with tabs[1]:
-    st.markdown("### Advanced Tools")
-    
-    st.subheader("RSI Checker")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        stock_symbol = st.text_input(
-            f"Enter {st.session_state.selected_exchange} Stock Symbol",
-            help="Example: RELIANCE"
-        )
-    
-    with col2:
-        date = st.date_input(
-            "Select Date",
-            value=datetime.date.today(),
-            help="Choose a date for RSI analysis"
-        )
-
-    if st.button("Check RSI", use_container_width=True):
-        st.info(f"RSI lookup for {stock_symbol} on {date} coming soon") 
+            safe_display(df, strategy) 

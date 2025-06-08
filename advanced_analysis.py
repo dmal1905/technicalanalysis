@@ -178,4 +178,119 @@ def analyze_all_tokens_advanced(alice, tokens, strategy, exchange='NSE'):
                     results.append(result)
             except Exception as e:
                 print(f"Error processing {token}: {e}")
+    return results
+
+def analyze_price_movement(df, duration_days, target_percentage, direction='up'):
+    """
+    Analyze price movement over a specified duration.
+    
+    Args:
+        df: DataFrame with price data
+        duration_days: Number of days to look back
+        target_percentage: Target percentage change
+        direction: 'up' or 'down' for price movement direction
+    
+    Returns:
+        tuple: (percentage_change, met_criteria)
+    """
+    if len(df) < duration_days:
+        return 0, False
+    
+    # Get the price from duration_days ago and current price
+    start_price = df['close'].iloc[-duration_days]
+    current_price = df['close'].iloc[-1]
+    
+    # Calculate percentage change
+    percentage_change = ((current_price - start_price) / start_price) * 100
+    
+    # Check if criteria is met
+    if direction == 'up':
+        met_criteria = percentage_change >= target_percentage
+    else:  # down
+        met_criteria = percentage_change <= -target_percentage
+    
+    return percentage_change, met_criteria
+
+def analyze_stock_custom(alice, token, duration_days, target_percentage, direction='up', exchange='NSE'):
+    """
+    Analyze stock based on custom price movement criteria.
+    
+    Args:
+        alice: AliceBlue API instance
+        token: Stock token
+        duration_days: Number of days to look back
+        target_percentage: Target percentage change
+        direction: 'up' or 'down' for price movement direction
+        exchange: 'NSE' or 'BSE'
+    
+    Returns:
+        dict: Analysis results or None if criteria not met
+    """
+    try:
+        # Get more historical data than needed to ensure we have enough
+        lookback_days = max(duration_days * 2, 365)  # At least double the duration or 1 year
+        instrument, df = get_historical_data(
+            alice, token, 
+            datetime.now() - timedelta(days=lookback_days), 
+            datetime.now(), 
+            "D", 
+            exchange
+        )
+        
+        if len(df) < duration_days:
+            return None
+
+        # Calculate price movement
+        percentage_change, met_criteria = analyze_price_movement(
+            df, duration_days, target_percentage, direction
+        )
+        
+        if not met_criteria:
+            return None
+
+        # Additional analysis for context
+        volume_trend = df['volume'].iloc[-5:].mean() > df['volume'].iloc[-20:].mean()
+        volatility = df['close'].pct_change().std() * 100
+        
+        result = {
+            'Name': instrument.symbol,
+            'Close': df['close'].iloc[-1],
+            'Start_Price': df['close'].iloc[-duration_days],
+            'Percentage_Change': percentage_change,
+            'Volume_Trend': 'Increasing' if volume_trend else 'Decreasing',
+            'Volatility': volatility,
+            'Duration_Days': duration_days,
+            'Direction': direction.capitalize(),
+            'Strength': abs(percentage_change) / target_percentage  # Normalized strength
+        }
+        
+        return result
+
+    except Exception as e:
+        print(f"Error analyzing {token}: {e}")
+        return None
+
+def analyze_all_tokens_custom(alice, tokens, duration_days, target_percentage, direction='up', exchange='NSE'):
+    """Analyze all tokens using custom criteria in parallel."""
+    results = []
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_token = {
+            executor.submit(
+                analyze_stock_custom, 
+                alice, 
+                token, 
+                duration_days, 
+                target_percentage, 
+                direction, 
+                exchange
+            ): token for token in tokens
+        }
+        for future in as_completed(future_to_token):
+            token = future_to_token[future]
+            try:
+                result = future.result()
+                if result:
+                    results.append(result)
+            except Exception as e:
+                print(f"Error processing {token}: {e}")
     return results 

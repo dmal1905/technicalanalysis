@@ -173,6 +173,37 @@ st.markdown("""
         color: var(--text-secondary) !important;
     }
     
+    /* Authentication page styling */
+    .stTextInput>div>div>input {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border) !important;
+    }
+    
+    .stTextInput>div>div>input::placeholder {
+        color: var(--text-secondary) !important;
+    }
+    
+    /* Fix for Streamlit's default white backgrounds */
+    .stMarkdown, .stText, .stButton, .stSelectbox, .stTextInput {
+        background-color: var(--bg) !important;
+    }
+    
+    /* Fix for Streamlit's default text colors */
+    .stMarkdown p, .stText p, .stSelectbox div, .stTextInput div {
+        color: var(--text-primary) !important;
+    }
+    
+    /* Fix for Streamlit's default button text */
+    .stButton>button>div>p {
+        color: white !important;
+    }
+    
+    /* Fix for Streamlit's default headers */
+    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        color: var(--text-primary) !important;
+    }
+    
     /* Mobile-specific adjustments */
     @media (max-width: 768px) {
         .header {

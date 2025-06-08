@@ -18,22 +18,29 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for clean, minimalist styling with forced light mode
+# Custom CSS with modern color scheme
 st.markdown("""
     <style>
-    /* Force light mode */
+    /* Modern color palette */
     :root {
-        --background-color: #ffffff;
-        --text-color: #333333;
-        --secondary-background-color: #f8fafc;
-        --main-color: #2563eb;
-        --border-color: #e0e0e0;
+        --primary-color: #6366f1;      /* Indigo */
+        --primary-hover: #4f46e5;      /* Darker Indigo */
+        --background-color: #f8fafc;   /* Light Gray */
+        --card-bg: #ffffff;            /* White */
+        --text-primary: #1e293b;       /* Slate 800 */
+        --text-secondary: #475569;     /* Slate 600 */
+        --border-color: #e2e8f0;       /* Slate 200 */
+        --accent-color: #8b5cf6;       /* Purple */
+        --success-color: #10b981;      /* Emerald */
+        --warning-color: #f59e0b;      /* Amber */
+        --error-color: #ef4444;        /* Red */
+        --hover-bg: #f1f5f9;           /* Slate 100 */
     }
     
-    /* Override Streamlit's dark mode */
+    /* Override Streamlit's default theme */
     .stApp {
         background-color: var(--background-color) !important;
-        color: var(--text-color) !important;
+        color: var(--text-primary) !important;
     }
     
     /* Main container styling */
@@ -44,35 +51,47 @@ st.markdown("""
     
     /* Header styling */
     .header {
-        background-color: var(--background-color) !important;
-        color: var(--text-color) !important;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
+        color: white !important;
         padding: 2rem 0;
         margin-bottom: 2rem;
         text-align: center;
+        border-radius: 0 0 1rem 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     /* Card styling */
     .card {
-        background-color: var(--background-color) !important;
+        background-color: var(--card-bg) !important;
         padding: 1.5rem;
-        border-radius: 8px;
+        border-radius: 1rem;
         border: 1px solid var(--border-color);
         margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
     /* Button styling */
     .stButton>button {
-        background-color: var(--main-color) !important;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
         color: white !important;
         border: none;
-        padding: 0.5rem 1.5rem;
-        border-radius: 6px;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
         font-weight: 500;
         transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
     }
     
     .stButton>button:hover {
-        background-color: #1d4ed8 !important;
+        background: linear-gradient(135deg, var(--primary-hover), var(--accent-color)) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
     }
     
     /* Exchange toggle styling */
@@ -84,97 +103,121 @@ st.markdown("""
     }
     
     .exchange-toggle button {
-        background: white !important;
-        border: 1px solid var(--main-color) !important;
-        color: var(--main-color) !important;
-        padding: 0.5rem 1.5rem;
-        border-radius: 6px;
+        background: var(--card-bg) !important;
+        border: 2px solid var(--primary-color) !important;
+        color: var(--primary-color) !important;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
         font-weight: 500;
+        transition: all 0.2s ease;
     }
     
     .exchange-toggle button.active {
-        background: var(--main-color) !important;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
         color: white !important;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
     }
     
     /* Table styling */
     .dataframe {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
         margin: 1rem 0;
         font-size: 0.9rem;
-        background-color: var(--background-color) !important;
-        color: var(--text-color) !important;
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     
     .dataframe th {
-        background-color: var(--secondary-background-color) !important;
-        color: var(--text-color) !important;
-        padding: 0.75rem;
+        background-color: var(--hover-bg) !important;
+        color: var(--text-primary) !important;
+        padding: 1rem;
         font-weight: 600;
         border-bottom: 2px solid var(--border-color);
+        text-align: left;
     }
     
     .dataframe td {
-        padding: 0.75rem;
+        padding: 1rem;
         border-bottom: 1px solid var(--border-color);
-        color: var(--text-color) !important;
+        color: var(--text-secondary) !important;
     }
     
     .dataframe tr:hover {
-        background-color: var(--secondary-background-color) !important;
+        background-color: var(--hover-bg) !important;
     }
     
     /* Alert styling */
     .stAlert {
-        border-radius: 6px;
+        border-radius: 0.75rem;
         padding: 1rem;
-        background-color: var(--background-color) !important;
-        color: var(--text-color) !important;
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     
     /* Selectbox styling */
     .stSelectbox {
-        background-color: white !important;
-        color: var(--text-color) !important;
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+        border-radius: 0.75rem;
     }
     
     /* Progress bar styling */
     .stProgress > div > div {
-        background-color: var(--main-color) !important;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
+        border-radius: 0.5rem;
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background-color: var(--secondary-background-color) !important;
+        background-color: var(--card-bg) !important;
+        border-right: 1px solid var(--border-color);
     }
     
     /* Text styling */
     h1, h2, h3 {
-        color: var(--text-color) !important;
+        color: var(--text-primary) !important;
         font-weight: 600;
     }
     
     p {
-        color: var(--text-color) !important;
+        color: var(--text-secondary) !important;
     }
     
     /* Mobile-specific adjustments */
     @media (max-width: 768px) {
         .header {
-            padding: 1rem 0;
+            padding: 1.5rem 0;
+            margin-bottom: 1rem;
         }
         
         .card {
             padding: 1rem;
+            margin-bottom: 0.75rem;
         }
         
         .dataframe {
             font-size: 0.8rem;
         }
         
+        .dataframe th, .dataframe td {
+            padding: 0.75rem;
+        }
+        
         .stButton>button {
-            padding: 0.4rem 1rem;
+            padding: 0.6rem 1.2rem;
+        }
+        
+        .exchange-toggle button {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
         }
     }
     </style>

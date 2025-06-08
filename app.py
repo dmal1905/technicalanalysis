@@ -18,21 +18,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS with TradingView-like dark theme
+# Custom CSS with modern theme
 st.markdown("""
     <style>
-    /* TradingView-like dark theme */
+    /* Modern theme colors */
     :root {
-        --bg: #131722;
-        --bg-secondary: #1e222d;
-        --text-primary: #d1d4dc;
-        --text-secondary: #787b86;
-        --border: #2a2e39;
-        --accent: #2962ff;
-        --accent-hover: #1e53e5;
-        --card-bg: #1e222d;
-        --hover: #2a2e39;
-        --success: #26a69a;
+        --bg: #0e1117;
+        --bg-secondary: #262730;
+        --text-primary: #fafafa;
+        --text-secondary: #9ca3af;
+        --border: #2d3748;
+        --accent: #00acb5;
+        --accent-hover: #0099a1;
+        --card-bg: #1e1e2e;
+        --hover: #2d3748;
+        --success: #00acb5;
         --warning: #f59e0b;
         --error: #ef5350;
     }
@@ -46,12 +46,12 @@ st.markdown("""
     /* Main container styling */
     .main {
         background-color: var(--bg) !important;
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
     /* Header styling */
     .header {
-        background-color: var(--bg-secondary) !important;
+        background-color: var(--bg) !important;
         color: var(--text-primary) !important;
         padding: 2rem 0;
         margin-bottom: 2rem;
@@ -59,28 +59,45 @@ st.markdown("""
         border-bottom: 1px solid var(--border);
     }
     
+    .header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(90deg, var(--accent), #00d4ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .header p {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+    }
+    
     /* Card styling */
     .card {
         background-color: var(--card-bg) !important;
         padding: 1.5rem;
-        border-radius: 0.5rem;
+        border-radius: 0.75rem;
         border: 1px solid var(--border);
         margin-bottom: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     /* Button styling */
     .stButton>button {
-        background-color: var(--accent) !important;
+        background: linear-gradient(90deg, var(--accent), #00d4ff) !important;
         color: white !important;
         border: none;
         padding: 0.75rem 1.5rem;
-        border-radius: 0.25rem;
+        border-radius: 0.5rem;
         font-weight: 500;
         transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .stButton>button:hover {
-        background-color: var(--accent-hover) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
     /* Exchange toggle styling */
@@ -88,16 +105,22 @@ st.markdown("""
         display: flex;
         justify-content: center;
         gap: 1rem;
-        margin: 1rem 0;
+        margin: 1.5rem 0;
     }
     
     .exchange-toggle button {
         background: var(--card-bg) !important;
-        border: 1px solid var(--accent) !important;
+        border: 2px solid var(--accent) !important;
         color: var(--accent) !important;
         padding: 0.75rem 1.5rem;
-        border-radius: 0.25rem;
+        border-radius: 0.5rem;
         font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .exchange-toggle button:hover {
+        background: var(--accent) !important;
+        color: white !important;
     }
     
     .exchange-toggle button.active {
@@ -114,21 +137,22 @@ st.markdown("""
         font-size: 0.9rem;
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
-        border-radius: 0.25rem;
+        border-radius: 0.75rem;
         overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     .dataframe th {
         background-color: var(--bg-secondary) !important;
         color: var(--text-primary) !important;
-        padding: 0.75rem;
+        padding: 1rem;
         font-weight: 600;
         border-bottom: 1px solid var(--border);
         text-align: left;
     }
     
     .dataframe td {
-        padding: 0.75rem;
+        padding: 1rem;
         border-bottom: 1px solid var(--border);
         color: var(--text-secondary) !important;
     }
@@ -139,27 +163,34 @@ st.markdown("""
     
     /* Alert styling */
     .stAlert {
-        border-radius: 0.25rem;
+        border-radius: 0.75rem;
         padding: 1rem;
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
         border: 1px solid var(--border);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     /* Selectbox styling */
     .stSelectbox {
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
+        border-radius: 0.5rem;
+    }
+    
+    .stSelectbox>div>div {
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
     }
     
     /* Progress bar styling */
     .stProgress > div > div {
-        background-color: var(--accent) !important;
+        background: linear-gradient(90deg, var(--accent), #00d4ff) !important;
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background-color: var(--bg-secondary) !important;
+        background-color: var(--bg) !important;
         border-right: 1px solid var(--border);
     }
     
@@ -178,6 +209,8 @@ st.markdown("""
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
         border: 1px solid var(--border) !important;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
     }
     
     .stTextInput>div>div>input::placeholder {
@@ -209,6 +242,10 @@ st.markdown("""
         .header {
             padding: 1.5rem 0;
             margin-bottom: 1rem;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
         }
         
         .card {

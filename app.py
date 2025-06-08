@@ -10,48 +10,159 @@ from stock_analysis import (
 from stock_lists import STOCK_LISTS
 from utils import generate_tradingview_link
 
-st.set_page_config(page_title="Stock Screener", layout="wide")
+# Page Configuration
+st.set_page_config(
+    page_title="Stock Screener Pro",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Initialize session state for exchange selection if not exists
-if 'selected_exchange' not in st.session_state:
-    st.session_state.selected_exchange = 'NSE'
-
-# Custom CSS for the exchange toggle
+# Custom CSS for modern styling
 st.markdown("""
     <style>
+    /* Main container styling */
+    .main {
+        background-color: #f8f9fa;
+    }
+    
+    /* Header styling */
+    .header {
+        background: linear-gradient(90deg, #1a237e, #0d47a1);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    
+    /* Card styling */
+    .card {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+    }
+    
+    /* Button styling */
+    .stButton>button {
+        background: linear-gradient(90deg, #1a237e, #0d47a1);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Exchange toggle styling */
     .exchange-toggle {
         display: flex;
         justify-content: center;
-        margin: 20px 0;
+        gap: 1rem;
+        margin: 1rem 0;
     }
+    
     .exchange-toggle button {
-        padding: 10px 20px;
-        margin: 0 5px;
-        border: 2px solid #4CAF50;
-        background-color: white;
-        color: #4CAF50;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: bold;
+        background: white;
+        border: 2px solid #1a237e;
+        color: #1a237e;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
         transition: all 0.3s ease;
     }
+    
     .exchange-toggle button.active {
-        background-color: #4CAF50;
+        background: #1a237e;
         color: white;
     }
-    .exchange-toggle button:hover {
-        background-color: #45a049;
+    
+    /* Table styling */
+    .dataframe {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+    
+    .dataframe th {
+        background-color: #1a237e;
         color: white;
+        padding: 0.75rem;
+    }
+    
+    .dataframe td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .dataframe tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    /* Alert styling */
+    .stAlert {
+        border-radius: 10px;
+        padding: 1rem;
+    }
+    
+    /* Selectbox styling */
+    .stSelectbox {
+        background-color: white;
+    }
+    
+    /* Progress bar styling */
+    .stProgress > div > div {
+        background-color: #1a237e;
     }
     </style>
 """, unsafe_allow_html=True)
 
-tabs = st.tabs(["📊 Stock Screener", "🛠️ Advanced Tools"])
+# Initialize session state
+if 'selected_exchange' not in st.session_state:
+    st.session_state.selected_exchange = 'NSE'
+
+# Header
+st.markdown("""
+    <div class="header">
+        <h1 style="text-align: center; margin: 0;">📈 Stock Screener Pro</h1>
+        <p style="text-align: center; margin: 0;">Advanced Technical Analysis for NSE & BSE</p>
+    </div>
+""", unsafe_allow_html=True)
+
+# Sidebar
+with st.sidebar:
+    st.markdown("### 🔐 Authentication")
+    user_id, api_key = load_credentials()
+    
+    if not user_id or not api_key:
+        st.markdown("#### Enter AliceBlue API Credentials")
+        new_user_id = st.text_input("User ID", type="password")
+        new_api_key = st.text_input("API Key", type="password")
+        if st.button("Login", use_container_width=True):
+            save_credentials(new_user_id, new_api_key)
+            st.success("API credentials saved! Refreshing...")
+            st.rerun()
+    
+    st.markdown("---")
+    st.markdown("### ℹ️ About")
+    st.markdown("""
+        This screener uses advanced technical analysis to identify potential trading opportunities.
+        Please conduct your own due diligence before making any trading decisions.
+    """)
+    
+    st.markdown("---")
+    st.markdown("### 🛠️ Settings")
+    st.markdown("Select your preferred exchange and stock list to begin screening.")
+
+# Main Content
+tabs = st.tabs(["📊 Stock Screener", "🛠️ Advanced Tools", "📈 Market Overview"])
 
 with tabs[0]:
-    st.warning("This screener is based on statistical analysis. Please conduct your own due diligence before making any trading decisions. This application is best compatible with **Google Chrome**.")
-
-    # Exchange Selection with custom toggle buttons
+    # Exchange Selection
     st.markdown('<div class="exchange-toggle">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     
@@ -73,21 +184,16 @@ with tabs[0]:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Display current exchange
-    st.markdown(f"<h2 style='text-align: center; color: #4CAF50;'>{st.session_state.selected_exchange} Stock Screener</h2>", unsafe_allow_html=True)
+    # Current Exchange Display
+    st.markdown(f"""
+        <div class="card">
+            <h2 style="text-align: center; color: #1a237e;">
+                {st.session_state.selected_exchange} Stock Screener
+            </h2>
+        </div>
+    """, unsafe_allow_html=True)
 
-    # Try loading stored credentials
-    user_id, api_key = load_credentials()
-
-    if not user_id or not api_key:
-        st.title("Admin Login - Enter AliceBlue API Credentials")
-        new_user_id = st.text_input("Enter User ID", type="password")  # Hide input
-        new_api_key = st.text_input("Enter API Key", type="password")  # Hide input
-        if st.button("Login"):
-            save_credentials(new_user_id, new_api_key)
-            st.success("API credentials saved! Refreshing...")
-            st.rerun()
-
+    # Initialize AliceBlue
     try:
         alice = initialize_alice()
     except Exception as e:
@@ -103,7 +209,6 @@ with tabs[0]:
             
             if strategy == "EMA, RSI & Support Zone (Buy)":
                 return analyze_all_tokens_bullish(alice, tokens, exchange=st.session_state.selected_exchange)
-
             elif strategy == "EMA, RSI & Resistance Zone (Sell)":
                 return analyze_all_tokens_bearish(alice, tokens, exchange=st.session_state.selected_exchange)
         except Exception as e:
@@ -137,32 +242,40 @@ with tabs[0]:
         if df.empty:
             st.warning(f"No stocks found for {title}")
         else:
-            st.markdown(f"## {title}")
+            st.markdown(f"""
+                <div class="card">
+                    <h3 style="color: #1a237e;">{title}</h3>
+                </div>
+            """, unsafe_allow_html=True)
+            
             if "Name" in df.columns:
                 df["Name"] = df["Name"].apply(
                     lambda x: generate_tradingview_link(x, st.session_state.selected_exchange)
                 )
             st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
 
-    st.markdown("""
-        <style>
-            table { width: 100% !important; }
-            th, td { padding: 10px !important; text-align: left !important; }
-            td:nth-child(1) { min-width: 200px !important; }
-            a { white-space: nowrap; }
-        </style>
-    """, unsafe_allow_html=True)
+    # Stock Selection and Strategy
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        selected_list = st.selectbox(
+            "Select Stock List:",
+            list(STOCK_LISTS.keys()),
+            help="Choose a predefined list of stocks to analyze"
+        )
+    
+    with col2:
+        strategy = st.selectbox(
+            "Select Strategy:",
+            [
+                "EMA, RSI & Support Zone (Buy)",
+                "EMA, RSI & Resistance Zone (Sell)"
+            ],
+            help="Choose a technical analysis strategy"
+        )
 
-    selected_list = st.selectbox("Select Stock List:", list(STOCK_LISTS.keys()))
-    strategy = st.selectbox(
-        "Select Strategy:", 
-        [
-            "EMA, RSI & Support Zone (Buy)",
-            "EMA, RSI & Resistance Zone (Sell)"
-        ]
-    )
-
-    if st.button("Start Screening"):
+    # Start Screening Button
+    if st.button("Start Screening", use_container_width=True):
         tokens = STOCK_LISTS.get(selected_list, [])
         if not tokens:
             st.warning(f"No stocks found for {selected_list}.")
@@ -173,14 +286,43 @@ with tabs[0]:
             safe_display(df, strategy)
 
 with tabs[1]:
-    st.header("🛠️ Advanced Features (Experimental)")
-
+    st.markdown("""
+        <div class="card">
+            <h2 style="color: #1a237e;">Advanced Technical Analysis Tools</h2>
+        </div>
+    """, unsafe_allow_html=True)
+    
     st.subheader("RSI Checker for a Stock")
-    stock_symbol = st.text_input(f"Enter {st.session_state.selected_exchange} Stock Symbol (e.g., RELIANCE)")
-    date = st.date_input("Pick a date", value=datetime.date.today())
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        stock_symbol = st.text_input(
+            f"Enter {st.session_state.selected_exchange} Stock Symbol",
+            help="Example: RELIANCE"
+        )
+    
+    with col2:
+        date = st.date_input(
+            "Select Date",
+            value=datetime.date.today(),
+            help="Choose a date for RSI analysis"
+        )
 
-    if st.button("Check RSI"):
+    if st.button("Check RSI", use_container_width=True):
         st.info(f"Feature coming soon: RSI lookup for {stock_symbol} on {date}")
-        # Placeholder for future implementation
-        # result = get_rsi_for_stock(stock_symbol, date)
-        # st.write(result) 
+
+with tabs[2]:
+    st.markdown("""
+        <div class="card">
+            <h2 style="color: #1a237e;">Market Overview</h2>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.info("Market overview features coming soon!")
+    st.markdown("""
+        Future features will include:
+        - Market breadth indicators
+        - Sector performance analysis
+        - Top gainers and losers
+        - Volume analysis
+    """) 

@@ -48,7 +48,6 @@ def get_stock_lists_for_exchange(exchange):
 # Header
 st.markdown("""
     <div class="header">
-        <h1>Stock Screener</h1>
         <p>Advanced Technical Analysis for NSE & BSE</p>
     </div>
 """, unsafe_allow_html=True)

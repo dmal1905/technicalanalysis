@@ -1,330 +1,296 @@
-import streamlit as st
 import pandas as pd
-import datetime
+import numpy as np
+from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from alice_client import initialize_alice, save_credentials, load_credentials
-from advanced_analysis import analyze_all_tokens_advanced
-from stock_lists import STOCK_LISTS
-from utils import generate_tradingview_link
+from scipy.signal import argrelextrema
+from sklearn.preprocessing import MinMaxScaler
 
-# Page Configuration
-st.set_page_config(
-    page_title="Stock Screener",
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+def get_historical_data(alice, token, from_date, to_date, interval="D", exchange='NSE'):
+    """Fetch historical data and return as a DataFrame."""
+    exchange_name = 'BSE (1)' if exchange == 'BSE' else 'NSE'
+    instrument = alice.get_instrument_by_token(exchange_name, token)
+    historical_data = alice.get_historical(instrument, from_date, to_date, interval)
+    df = pd.DataFrame(historical_data).dropna()
+    return instrument, df
 
-# Custom CSS for clean, minimalist styling
-st.markdown("""
-    <style>
-    /* Main container styling */
-    .main {
-        background-color: #ffffff;
-        font-family: 'Inter', sans-serif;
-    }
+def identify_candlestick_patterns(df):
+    """Identify common candlestick patterns."""
+    patterns = []
     
-    /* Header styling */
-    .header {
-        background-color: #ffffff;
-        color: #333333;
-        padding: 2rem 0;
-        margin-bottom: 2rem;
-        text-align: center;
-    }
+    # Calculate basic candle properties
+    df['body'] = df['close'] - df['open']
+    df['upper_shadow'] = df['high'] - df[['open', 'close']].max(axis=1)
+    df['lower_shadow'] = df[['open', 'close']].min(axis=1) - df['low']
+    df['body_size'] = abs(df['body'])
+    df['total_size'] = df['high'] - df['low']
     
-    /* Card styling */
-    .card {
-        background-color: #ffffff;
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        margin-bottom: 1rem;
-    }
+    # Doji
+    doji = (df['body_size'] <= 0.1 * df['total_size'])
+    if doji.iloc[-1]:
+        patterns.append('Doji')
     
-    /* Button styling */
-    .stButton>button {
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        padding: 0.5rem 1.5rem;
-        border-radius: 6px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
+    # Hammer
+    hammer = (
+        (df['lower_shadow'] > 2 * df['body_size']) &
+        (df['upper_shadow'] < df['body_size'])
+    )
+    if hammer.iloc[-1]:
+        patterns.append('Hammer')
     
-    .stButton>button:hover {
-        background-color: #1d4ed8;
-    }
+    # Engulfing
+    if len(df) >= 2:
+        bullish_engulfing = (
+            (df['body'].iloc[-2] < 0) &  # Previous candle is bearish
+            (df['body'].iloc[-1] > 0) &  # Current candle is bullish
+            (df['open'].iloc[-1] < df['close'].iloc[-2]) &  # Current open below previous close
+            (df['close'].iloc[-1] > df['open'].iloc[-2])  # Current close above previous open
+        )
+        if bullish_engulfing:
+            patterns.append('Bullish Engulfing')
     
-    /* Exchange toggle styling */
-    .exchange-toggle {
-        display: flex;
-        justify-content: center;
-        gap: 1rem;
-        margin: 1rem 0;
-    }
-    
-    .exchange-toggle button {
-        background: white;
-        border: 1px solid #2563eb;
-        color: #2563eb;
-        padding: 0.5rem 1.5rem;
-        border-radius: 6px;
-        font-weight: 500;
-    }
-    
-    .exchange-toggle button.active {
-        background: #2563eb;
-        color: white;
-    }
-    
-    /* Table styling */
-    .dataframe {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 1rem 0;
-        font-size: 0.9rem;
-    }
-    
-    .dataframe th {
-        background-color: #f8fafc;
-        color: #1e293b;
-        padding: 0.75rem;
-        font-weight: 600;
-        border-bottom: 2px solid #e2e8f0;
-    }
-    
-    .dataframe td {
-        padding: 0.75rem;
-        border-bottom: 1px solid #e2e8f0;
-        color: #334155;
-    }
-    
-    .dataframe tr:hover {
-        background-color: #f8fafc;
-    }
-    
-    /* Alert styling */
-    .stAlert {
-        border-radius: 6px;
-        padding: 1rem;
-    }
-    
-    /* Selectbox styling */
-    .stSelectbox {
-        background-color: white;
-    }
-    
-    /* Progress bar styling */
-    .stProgress > div > div {
-        background-color: #2563eb;
-    }
-    
-    /* Sidebar styling */
-    .css-1d391kg {
-        background-color: #f8fafc;
-    }
-    
-    /* Text styling */
-    h1, h2, h3 {
-        color: #1e293b;
-        font-weight: 600;
-    }
-    
-    p {
-        color: #334155;
-    }
-    </style>
-""", unsafe_allow_html=True)
+    return patterns
 
-# Initialize session state
-if 'selected_exchange' not in st.session_state:
-    st.session_state.selected_exchange = 'NSE'
-
-def get_stock_lists_for_exchange(exchange):
-    """Filter stock lists based on the selected exchange."""
-    if exchange == 'NSE':
-        return {k: v for k, v in STOCK_LISTS.items() if k in [
-            'NIFTY FNO', 'NIFTY 50', 'NIFTY 200', 'NIFTY 500', 'ALL STOCKS'
-        ]}
-    else:  # BSE
-        return {k: v for k, v in STOCK_LISTS.items() if k in [
-            'BSE 500', 'BSE Large Cap Index', 'BSE Mid Cap Index', 
-            'BSE Small Cap Index', 'BSE 400 MidSmallCap', 
-            'BSE 250 LargeMidCap', 'BSE ALL STOCKS'
-        ]}
-
-# Header
-st.markdown("""
-    <div class="header">
-        <h1>Stock Screener</h1>
-        <p>Advanced Technical Analysis for NSE & BSE</p>
-    </div>
-""", unsafe_allow_html=True)
-
-# Sidebar
-with st.sidebar:
-    st.markdown("### Authentication")
-    user_id, api_key = load_credentials()
+def analyze_volume_profile(df):
+    """Analyze volume profile and identify significant price levels."""
+    # Create price bins
+    price_range = df['high'].max() - df['low'].min()
+    num_bins = 50
+    bin_size = price_range / num_bins
     
-    if not user_id or not api_key:
-        st.markdown("Enter AliceBlue API Credentials")
-        new_user_id = st.text_input("User ID", type="password")
-        new_api_key = st.text_input("API Key", type="password")
-        if st.button("Login", use_container_width=True):
-            save_credentials(new_user_id, new_api_key)
-            st.success("Credentials saved!")
-            st.rerun()
+    # Calculate volume profile
+    volume_profile = pd.DataFrame()
+    volume_profile['price_level'] = np.arange(df['low'].min(), df['high'].max(), bin_size)
+    volume_profile['volume'] = 0
     
-    st.markdown("---")
-    st.markdown("### About")
-    st.markdown("""
-        This screener uses technical analysis to identify potential trading opportunities.
-        Please conduct your own due diligence before making any trading decisions.
-    """)
+    for i in range(len(df)):
+        price = df['close'].iloc[i]
+        volume = df['volume'].iloc[i]
+        bin_index = int((price - df['low'].min()) / bin_size)
+        if 0 <= bin_index < len(volume_profile):
+            volume_profile.iloc[bin_index, 1] += volume
+    
+    # Identify high volume nodes
+    mean_volume = volume_profile['volume'].mean()
+    std_volume = volume_profile['volume'].std()
+    high_volume_nodes = volume_profile[volume_profile['volume'] > mean_volume + std_volume]
+    
+    return high_volume_nodes
 
-# Main Content
-tabs = st.tabs(["Stock Screener"])
+def analyze_market_structure(df):
+    """Analyze market structure using higher highs and lower lows."""
+    # Find local maxima and minima
+    window = 5
+    local_max = argrelextrema(df['high'].values, np.greater_equal, order=window)[0]
+    local_min = argrelextrema(df['low'].values, np.less_equal, order=window)[0]
+    
+    # Analyze last 3 swing points
+    recent_max = df['high'].iloc[local_max[-3:]]
+    recent_min = df['low'].iloc[local_min[-3:]]
+    
+    # Determine trend
+    if len(recent_max) >= 2 and len(recent_min) >= 2:
+        higher_highs = recent_max.iloc[-1] > recent_max.iloc[-2]
+        higher_lows = recent_min.iloc[-1] > recent_min.iloc[-2]
+        
+        if higher_highs and higher_lows:
+            return "Uptrend"
+        elif not higher_highs and not higher_lows:
+            return "Downtrend"
+        else:
+            return "Sideways"
+    
+    return "Undefined"
 
-with tabs[0]:
-    # Exchange Selection
-    st.markdown('<div class="exchange-toggle">', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("NSE", key="nse_btn", 
-                    help="Switch to NSE stocks",
-                    use_container_width=True,
-                    type="primary" if st.session_state.selected_exchange == 'NSE' else "secondary"):
-            st.session_state.selected_exchange = 'NSE'
-            st.rerun()
-    
-    with col2:
-        if st.button("BSE", key="bse_btn",
-                    help="Switch to BSE stocks",
-                    use_container_width=True,
-                    type="primary" if st.session_state.selected_exchange == 'BSE' else "secondary"):
-            st.session_state.selected_exchange = 'BSE'
-            st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Initialize AliceBlue
+def analyze_stock_advanced(alice, token, strategy, exchange='NSE'):
+    """Analyze stock using advanced strategies."""
     try:
-        alice = initialize_alice()
-    except Exception as e:
-        st.error(f"Failed to initialize AliceBlue API: {e}")
-        alice = None
+        instrument, df = get_historical_data(
+            alice, token, datetime.now() - timedelta(days=365), datetime.now(), "D", exchange
+        )
+        if len(df) < 100:
+            return None
 
-    @st.cache_data(ttl=300)
-    def fetch_screened_stocks(tokens, strategy):
-        """Fetch and analyze stocks based on selected strategy."""
-        try:
-            if not alice:
-                raise Exception("AliceBlue API is not initialized.")
+        result = {
+            'Name': instrument.symbol,
+            'Close': df['close'].iloc[-1],
+            'Volume': df['volume'].iloc[-1],
+            'Patterns': [],
+            'Market_Structure': '',
+            'Volume_Nodes': [],
+            'Strength': 0
+        }
+
+        # Analyze candlestick patterns
+        patterns = identify_candlestick_patterns(df)
+        result['Patterns'] = patterns
+        
+        # Analyze market structure
+        result['Market_Structure'] = analyze_market_structure(df)
+        
+        # Analyze volume profile
+        volume_nodes = analyze_volume_profile(df)
+        result['Volume_Nodes'] = volume_nodes['price_level'].tolist()
+        
+        # Calculate overall strength based on strategy
+        if strategy == "Price Action Breakout":
+            # Strong breakouts with volume confirmation
+            if patterns and df['volume'].iloc[-1] > df['volume'].rolling(20).mean().iloc[-1] * 1.5:
+                result['Strength'] = len(patterns) * 2
+                
+        elif strategy == "Volume Profile Analysis":
+            # High volume nodes near current price
+            current_price = df['close'].iloc[-1]
+            nearby_nodes = volume_nodes[abs(volume_nodes['price_level'] - current_price) / current_price < 0.02]
+            result['Strength'] = len(nearby_nodes) * 3
             
-            return analyze_all_tokens_advanced(alice, tokens, strategy, exchange=st.session_state.selected_exchange)
-        except Exception as e:
-            st.error(f"Error fetching stock data: {e}")
-            return []
+        elif strategy == "Market Structure Analysis":
+            # Strong trend with confirmation
+            if result['Market_Structure'] in ['Uptrend', 'Downtrend']:
+                result['Strength'] = 5
+                
+        elif strategy == "Multi-Factor Analysis":
+            # Combine all factors
+            strength = 0
+            strength += len(patterns) * 2  # Candlestick patterns
+            strength += len(result['Volume_Nodes'])  # Volume nodes
+            strength += 5 if result['Market_Structure'] in ['Uptrend', 'Downtrend'] else 0  # Market structure
+            result['Strength'] = strength
 
-    def clean_and_display_data(data, strategy):
-        """Clean and convert the data into a DataFrame based on the strategy."""
-        if not data or not isinstance(data, list):
-            return pd.DataFrame()
-        
-        df = pd.DataFrame(data)
-        
-        # Convert numeric columns
-        df["Close"] = df["Close"].astype(float).round(2)
-        df["Volume"] = df["Volume"].astype(float).round(2)
-        df["Strength"] = df["Strength"].astype(float).round(2)
-        
-        # Convert lists to strings for display
-        df["Patterns"] = df["Patterns"].apply(lambda x: ", ".join(x) if x else "None")
-        df["Volume_Nodes"] = df["Volume_Nodes"].apply(lambda x: ", ".join(map(str, x[:3])) if x else "None")
-        
-        # Sort by strength
-        df = df.sort_values(by="Strength", ascending=False)
-        
-        return df
+        return result if result['Strength'] > 0 else None
 
-    def safe_display(df, title):
-        """Displays the stock data with clickable TradingView links."""
-        if df.empty:
-            st.warning(f"No stocks found for {title}")
-        else:
-            st.markdown(f"### {title}")
-            if "Name" in df.columns:
-                df["Name"] = df["Name"].apply(
-                    lambda x: generate_tradingview_link(x, st.session_state.selected_exchange)
-                )
-            st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+    except Exception as e:
+        print(f"Error analyzing {token}: {e}")
+        return None
 
-    # Stock Selection and Strategy
-    col1, col2 = st.columns(2)
+def analyze_all_tokens_advanced(alice, tokens, strategy, exchange='NSE'):
+    """Analyze all tokens using advanced strategies in parallel."""
+    results = []
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_token = {
+            executor.submit(analyze_stock_advanced, alice, token, strategy, exchange): token
+            for token in tokens
+        }
+        for future in as_completed(future_to_token):
+            token = future_to_token[future]
+            try:
+                result = future.result()
+                if result:
+                    results.append(result)
+            except Exception as e:
+                print(f"Error processing {token}: {e}")
+    return results
+
+def analyze_price_movement(df, duration_days, target_percentage, direction='up'):
+    """
+    Analyze price movement over a specified duration.
     
-    with col1:
-        available_lists = get_stock_lists_for_exchange(st.session_state.selected_exchange)
-        selected_list = st.selectbox(
-            "Select Stock List",
-            list(available_lists.keys()),
-            help="Choose a list of stocks to analyze"
-        )
+    Args:
+        df: DataFrame with price data
+        duration_days: Number of days to look back
+        target_percentage: Target percentage change
+        direction: 'up' or 'down' for price movement direction
     
-    with col2:
-        strategy = st.selectbox(
-            "Select Strategy",
-            [
-                "Price Action Breakout",
-                "Volume Profile Analysis",
-                "Market Structure Analysis",
-                "Multi-Factor Analysis"
-            ],
-            help="Choose a technical analysis strategy"
+    Returns:
+        tuple: (percentage_change, met_criteria)
+    """
+    if len(df) < duration_days:
+        return 0, False
+    
+    # Get the price from duration_days ago and current price
+    start_price = df['close'].iloc[-duration_days]
+    current_price = df['close'].iloc[-1]
+    
+    # Calculate percentage change
+    percentage_change = ((current_price - start_price) / start_price) * 100
+    
+    # Check if criteria is met
+    if direction == 'up':
+        met_criteria = percentage_change >= target_percentage
+    else:  # down
+        met_criteria = percentage_change <= -target_percentage
+    
+    return percentage_change, met_criteria
+
+def analyze_stock_custom(alice, token, duration_days, target_percentage, direction='up', exchange='NSE'):
+    """
+    Analyze stock based on custom price movement criteria.
+    
+    Args:
+        alice: AliceBlue API instance
+        token: Stock token
+        duration_days: Number of days to look back
+        target_percentage: Target percentage change
+        direction: 'up' or 'down' for price movement direction
+        exchange: 'NSE' or 'BSE'
+    
+    Returns:
+        dict: Analysis results or None if criteria not met
+    """
+    try:
+        # Get more historical data than needed to ensure we have enough
+        lookback_days = max(duration_days * 2, 365)  # At least double the duration or 1 year
+        instrument, df = get_historical_data(
+            alice, token, 
+            datetime.now() - timedelta(days=lookback_days), 
+            datetime.now(), 
+            "D", 
+            exchange
         )
+        
+        if len(df) < duration_days:
+            return None
 
-    # Strategy descriptions
-    strategy_descriptions = {
-        "Price Action Breakout": """
-            - Identifies strong breakouts with volume confirmation
-            - Analyzes candlestick patterns and price action
-            - Considers multiple timeframe confirmation
-            - Includes volume profile analysis
-        """,
-        "Volume Profile Analysis": """
-            - Identifies high-volume price levels
-            - Analyzes volume distribution
-            - Detects institutional buying/selling
-            - Includes volume-weighted price levels
-        """,
-        "Market Structure Analysis": """
-            - Analyzes market structure (HH/HL vs LH/LL)
-            - Identifies trend strength and direction
-            - Includes multiple timeframe analysis
-            - Considers market regime (trending vs ranging)
-        """,
-        "Multi-Factor Analysis": """
-            - Combines price action, volume, and market structure
-            - Includes relative strength analysis
-            - Considers sector rotation
-            - Integrates market breadth indicators
-        """
-    }
+        # Calculate price movement
+        percentage_change, met_criteria = analyze_price_movement(
+            df, duration_days, target_percentage, direction
+        )
+        
+        if not met_criteria:
+            return None
 
-    # Display strategy description
-    st.markdown("### Strategy Details")
-    st.markdown(strategy_descriptions[strategy])
+        # Additional analysis for context
+        volume_trend = df['volume'].iloc[-5:].mean() > df['volume'].iloc[-20:].mean()
+        volatility = df['close'].pct_change().std() * 100
+        
+        result = {
+            'Name': instrument.symbol,
+            'Close': df['close'].iloc[-1],
+            'Start_Price': df['close'].iloc[-duration_days],
+            'Percentage_Change': percentage_change,
+            'Volume_Trend': 'Increasing' if volume_trend else 'Decreasing',
+            'Volatility': volatility,
+            'Duration_Days': duration_days,
+            'Direction': direction.capitalize(),
+            'Strength': abs(percentage_change) / target_percentage  # Normalized strength
+        }
+        
+        return result
 
-    # Start Screening Button
-    if st.button("Start Screening", use_container_width=True):
-        available_lists = get_stock_lists_for_exchange(st.session_state.selected_exchange)
-        tokens = available_lists.get(selected_list, [])
-        if not tokens:
-            st.warning(f"No stocks found for {selected_list}.")
-        else:
-            with st.spinner("Analyzing stocks..."):
-                screened_stocks = fetch_screened_stocks(tokens, strategy)
-            df = clean_and_display_data(screened_stocks, strategy)
-            safe_display(df, strategy) 
+    except Exception as e:
+        print(f"Error analyzing {token}: {e}")
+        return None
+
+def analyze_all_tokens_custom(alice, tokens, duration_days, target_percentage, direction='up', exchange='NSE'):
+    """Analyze all tokens using custom criteria in parallel."""
+    results = []
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_token = {
+            executor.submit(
+                analyze_stock_custom, 
+                alice, 
+                token, 
+                duration_days, 
+                target_percentage, 
+                direction, 
+                exchange
+            ): token for token in tokens
+        }
+        for future in as_completed(future_to_token):
+            token = future_to_token[future]
+            try:
+                result = future.result()
+                if result:
+                    results.append(result)
+            except Exception as e:
+                print(f"Error processing {token}: {e}")
+    return results 

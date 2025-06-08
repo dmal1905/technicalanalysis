@@ -18,19 +18,34 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for clean, minimalist styling
+# Custom CSS for clean, minimalist styling with forced light mode
 st.markdown("""
     <style>
+    /* Force light mode */
+    :root {
+        --background-color: #ffffff;
+        --text-color: #333333;
+        --secondary-background-color: #f8fafc;
+        --main-color: #2563eb;
+        --border-color: #e0e0e0;
+    }
+    
+    /* Override Streamlit's dark mode */
+    .stApp {
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
+    }
+    
     /* Main container styling */
     .main {
-        background-color: #ffffff;
+        background-color: var(--background-color) !important;
         font-family: 'Inter', sans-serif;
     }
     
     /* Header styling */
     .header {
-        background-color: #ffffff;
-        color: #333333;
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
         padding: 2rem 0;
         margin-bottom: 2rem;
         text-align: center;
@@ -38,17 +53,17 @@ st.markdown("""
     
     /* Card styling */
     .card {
-        background-color: #ffffff;
+        background-color: var(--background-color) !important;
         padding: 1.5rem;
         border-radius: 8px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid var(--border-color);
         margin-bottom: 1rem;
     }
     
     /* Button styling */
     .stButton>button {
-        background-color: #2563eb;
-        color: white;
+        background-color: var(--main-color) !important;
+        color: white !important;
         border: none;
         padding: 0.5rem 1.5rem;
         border-radius: 6px;
@@ -57,7 +72,7 @@ st.markdown("""
     }
     
     .stButton>button:hover {
-        background-color: #1d4ed8;
+        background-color: #1d4ed8 !important;
     }
     
     /* Exchange toggle styling */
@@ -69,17 +84,17 @@ st.markdown("""
     }
     
     .exchange-toggle button {
-        background: white;
-        border: 1px solid #2563eb;
-        color: #2563eb;
+        background: white !important;
+        border: 1px solid var(--main-color) !important;
+        color: var(--main-color) !important;
         padding: 0.5rem 1.5rem;
         border-radius: 6px;
         font-weight: 500;
     }
     
     .exchange-toggle button.active {
-        background: #2563eb;
-        color: white;
+        background: var(--main-color) !important;
+        color: white !important;
     }
     
     /* Table styling */
@@ -88,55 +103,79 @@ st.markdown("""
         border-collapse: collapse;
         margin: 1rem 0;
         font-size: 0.9rem;
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
     }
     
     .dataframe th {
-        background-color: #f8fafc;
-        color: #1e293b;
+        background-color: var(--secondary-background-color) !important;
+        color: var(--text-color) !important;
         padding: 0.75rem;
         font-weight: 600;
-        border-bottom: 2px solid #e2e8f0;
+        border-bottom: 2px solid var(--border-color);
     }
     
     .dataframe td {
         padding: 0.75rem;
-        border-bottom: 1px solid #e2e8f0;
-        color: #334155;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-color) !important;
     }
     
     .dataframe tr:hover {
-        background-color: #f8fafc;
+        background-color: var(--secondary-background-color) !important;
     }
     
     /* Alert styling */
     .stAlert {
         border-radius: 6px;
         padding: 1rem;
+        background-color: var(--background-color) !important;
+        color: var(--text-color) !important;
     }
     
     /* Selectbox styling */
     .stSelectbox {
-        background-color: white;
+        background-color: white !important;
+        color: var(--text-color) !important;
     }
     
     /* Progress bar styling */
     .stProgress > div > div {
-        background-color: #2563eb;
+        background-color: var(--main-color) !important;
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background-color: #f8fafc;
+        background-color: var(--secondary-background-color) !important;
     }
     
     /* Text styling */
     h1, h2, h3 {
-        color: #1e293b;
+        color: var(--text-color) !important;
         font-weight: 600;
     }
     
     p {
-        color: #334155;
+        color: var(--text-color) !important;
+    }
+    
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .header {
+            padding: 1rem 0;
+        }
+        
+        .card {
+            padding: 1rem;
+        }
+        
+        .dataframe {
+            font-size: 0.8rem;
+        }
+        
+        .stButton>button {
+            padding: 0.4rem 1rem;
+        }
     }
     </style>
 """, unsafe_allow_html=True)

@@ -383,4 +383,109 @@ with tabs[0]:
                         exchange=st.session_state.selected_exchange
                     )
             df = clean_and_display_data(screened_stocks, strategy)
-            safe_display(df, strategy) 
+            safe_display(df, strategy)
+
+def screen_stocks():
+    """Screen stocks based on selected criteria."""
+    try:
+        # Get selected stock list
+        selected_list = st.session_state.selected_list
+        if not selected_list:
+            st.error("Please select a stock list")
+            return
+
+        # Get tokens for selected list
+        tokens = STOCK_LISTS[selected_list]
+        
+        # Create progress bar and status
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        status_text.text("Starting stock analysis...")
+        
+        # Calculate total batches
+        batch_size = 50
+        total_batches = (len(tokens) + batch_size - 1) // batch_size
+        
+        # Analyze stocks
+        results = []
+        for batch_num in range(total_batches):
+            # Update progress
+            progress = (batch_num + 1) / total_batches
+            progress_bar.progress(progress)
+            status_text.text(f"Analyzing batch {batch_num + 1} of {total_batches}...")
+            
+            # Process batch
+            start_idx = batch_num * batch_size
+            end_idx = min((batch_num + 1) * batch_size, len(tokens))
+            batch_tokens = tokens[start_idx:end_idx]
+            
+            batch_results = analyze_stock_batch(
+                alice, 
+                batch_tokens, 
+                st.session_state.selected_strategy,
+                st.session_state.selected_exchange
+            )
+            results.extend(batch_results)
+            
+            # Update status with matches found
+            status_text.text(f"Found {len(results)} matches so far...")
+        
+        # Complete progress
+        progress_bar.progress(1.0)
+        status_text.text(f"Analysis complete! Found {len(results)} matches.")
+        
+        if results:
+            # Convert results to DataFrame
+            df = pd.DataFrame(results)
+            
+            # Clean and display data
+            df = clean_and_display_data(df)
+            
+            # Show results
+            st.dataframe(df, use_container_width=True)
+            
+            # Download button
+            csv = df.to_csv(index=False)
+            st.download_button(
+                "Download Results",
+                csv,
+                "stock_screener_results.csv",
+                "text/csv",
+                key='download-csv'
+            )
+        else:
+            st.info("No stocks found matching the criteria.")
+            
+    except Exception as e:
+        st.error(f"Error during stock screening: {str(e)}")
+        progress_bar.empty()
+        status_text.empty()
+
+def clean_and_display_data(df):
+    """Clean and format the data for display."""
+    try:
+        # Convert numeric columns
+        numeric_cols = ['Close', 'Support', 'Resistance', 'Distance_pct', 'RSI']
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Format percentages
+        if 'Distance_pct' in df.columns:
+            df['Distance_pct'] = df['Distance_pct'].map('{:.2f}%'.format)
+        
+        # Format RSI
+        if 'RSI' in df.columns:
+            df['RSI'] = df['RSI'].map('{:.2f}'.format)
+        
+        # Sort by relevant columns
+        sort_cols = ['Distance_pct', 'RSI']
+        sort_cols = [col for col in sort_cols if col in df.columns]
+        if sort_cols:
+            df = df.sort_values(by=sort_cols)
+        
+        return df
+        
+    except Exception as e:
+        st.error(f"Error cleaning data: {str(e)}")
+        return df 

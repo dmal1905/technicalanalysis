@@ -18,20 +18,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS with modern theme
+# Custom CSS with clean, minimal theme
 st.markdown("""
     <style>
-    /* Modern theme colors */
+    /* Clean, minimal theme colors */
     :root {
-        --bg: #0e1117;
-        --bg-secondary: #262730;
-        --text-primary: #fafafa;
-        --text-secondary: #9ca3af;
-        --border: #2d3748;
-        --accent: #00acb5;
-        --accent-hover: #0099a1;
-        --card-bg: #1e1e2e;
-        --hover: #2d3748;
+        --bg: #ffffff;
+        --bg-secondary: #f0f2f6;
+        --text-primary: #262730;
+        --text-secondary: #4b5563;
+        --border: #e5e7eb;
+        --accent: #ff4b4b;
+        --accent-hover: #ff6b6b;
+        --card-bg: #ffffff;
+        --hover: #f8fafc;
         --success: #00acb5;
         --warning: #f59e0b;
         --error: #ef5350;
@@ -46,7 +46,7 @@ st.markdown("""
     /* Main container styling */
     .main {
         background-color: var(--bg) !important;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
     /* Header styling */
@@ -63,9 +63,7 @@ st.markdown("""
         font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
-        background: linear-gradient(90deg, var(--accent), #00d4ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: var(--text-primary);
     }
     
     .header p {
@@ -77,27 +75,24 @@ st.markdown("""
     .card {
         background-color: var(--card-bg) !important;
         padding: 1.5rem;
-        border-radius: 0.75rem;
+        border-radius: 0.5rem;
         border: 1px solid var(--border);
         margin-bottom: 1rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     /* Button styling */
     .stButton>button {
-        background: linear-gradient(90deg, var(--accent), #00d4ff) !important;
+        background-color: var(--accent) !important;
         color: white !important;
         border: none;
         padding: 0.75rem 1.5rem;
-        border-radius: 0.5rem;
+        border-radius: 0.25rem;
         font-weight: 500;
         transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .stButton>button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background-color: var(--accent-hover) !important;
     }
     
     /* Exchange toggle styling */
@@ -105,22 +100,16 @@ st.markdown("""
         display: flex;
         justify-content: center;
         gap: 1rem;
-        margin: 1.5rem 0;
+        margin: 1rem 0;
     }
     
     .exchange-toggle button {
-        background: var(--card-bg) !important;
-        border: 2px solid var(--accent) !important;
+        background: var(--bg) !important;
+        border: 1px solid var(--accent) !important;
         color: var(--accent) !important;
         padding: 0.75rem 1.5rem;
-        border-radius: 0.5rem;
+        border-radius: 0.25rem;
         font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    .exchange-toggle button:hover {
-        background: var(--accent) !important;
-        color: white !important;
     }
     
     .exchange-toggle button.active {
@@ -130,31 +119,35 @@ st.markdown("""
     
     /* Table styling */
     .dataframe {
-        width: 100%;
+        width: 100% !important;
         border-collapse: separate;
         border-spacing: 0;
         margin: 1rem 0;
         font-size: 0.9rem;
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
-        border-radius: 0.75rem;
+        border-radius: 0.25rem;
         overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     .dataframe th {
         background-color: var(--bg-secondary) !important;
         color: var(--text-primary) !important;
-        padding: 1rem;
+        padding: 10px !important;
         font-weight: 600;
         border-bottom: 1px solid var(--border);
-        text-align: left;
+        text-align: left !important;
     }
     
     .dataframe td {
-        padding: 1rem;
+        padding: 10px !important;
         border-bottom: 1px solid var(--border);
         color: var(--text-secondary) !important;
+        text-align: left !important;
+    }
+    
+    .dataframe td:nth-child(1) {
+        min-width: 200px !important;
     }
     
     .dataframe tr:hover {
@@ -163,19 +156,17 @@ st.markdown("""
     
     /* Alert styling */
     .stAlert {
-        border-radius: 0.75rem;
+        border-radius: 0.25rem;
         padding: 1rem;
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
         border: 1px solid var(--border);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     /* Selectbox styling */
     .stSelectbox {
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
-        border-radius: 0.5rem;
     }
     
     .stSelectbox>div>div {
@@ -185,7 +176,7 @@ st.markdown("""
     
     /* Progress bar styling */
     .stProgress > div > div {
-        background: linear-gradient(90deg, var(--accent), #00d4ff) !important;
+        background-color: var(--accent) !important;
     }
     
     /* Sidebar styling */
@@ -209,7 +200,7 @@ st.markdown("""
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
         border: 1px solid var(--border) !important;
-        border-radius: 0.5rem;
+        border-radius: 0.25rem;
         padding: 0.75rem;
     }
     
@@ -235,6 +226,17 @@ st.markdown("""
     /* Fix for Streamlit's default headers */
     .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
         color: var(--text-primary) !important;
+    }
+    
+    /* Link styling */
+    a {
+        color: var(--accent) !important;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    
+    a:hover {
+        text-decoration: underline;
     }
     
     /* Mobile-specific adjustments */

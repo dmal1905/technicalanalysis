@@ -28,13 +28,13 @@ st.markdown("""
         --text-primary: #262730;
         --text-secondary: #4b5563;
         --border: #e5e7eb;
-        --accent: #ff4b4b;
-        --accent-hover: #ff6b6b;
+        --accent: #4b5563;
+        --accent-hover: #6b7280;
         --card-bg: #ffffff;
         --hover: #f8fafc;
-        --success: #00acb5;
-        --warning: #f59e0b;
-        --error: #ef5350;
+        --success: #059669;
+        --warning: #d97706;
+        --error: #dc2626;
     }
     
     /* Override Streamlit's default theme */

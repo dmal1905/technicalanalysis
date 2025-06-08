@@ -165,7 +165,7 @@ def analyze_stock_advanced(alice, token, strategy, exchange='NSE'):
 def analyze_all_tokens_advanced(alice, tokens, strategy, exchange='NSE'):
     """Analyze all tokens using advanced strategies in parallel."""
     results = []
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=50) as executor:
         future_to_token = {
             executor.submit(analyze_stock_advanced, alice, token, strategy, exchange): token
             for token in tokens
@@ -273,7 +273,7 @@ def analyze_stock_custom(alice, token, duration_days, target_percentage, directi
 def analyze_all_tokens_custom(alice, tokens, duration_days, target_percentage, direction='up', exchange='NSE'):
     """Analyze all tokens using custom criteria in parallel."""
     results = []
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=50) as executor:
         future_to_token = {
             executor.submit(
                 analyze_stock_custom, 

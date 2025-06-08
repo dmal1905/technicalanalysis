@@ -18,80 +18,120 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS with modern color scheme
+# Custom CSS with TradingView-like color schemes
 st.markdown("""
     <style>
-    /* Modern color palette */
+    /* TradingView-like color schemes */
     :root {
-        --primary-color: #6366f1;      /* Indigo */
-        --primary-hover: #4f46e5;      /* Darker Indigo */
-        --background-color: #f8fafc;   /* Light Gray */
-        --card-bg: #ffffff;            /* White */
-        --text-primary: #1e293b;       /* Slate 800 */
-        --text-secondary: #475569;     /* Slate 600 */
-        --border-color: #e2e8f0;       /* Slate 200 */
-        --accent-color: #8b5cf6;       /* Purple */
-        --success-color: #10b981;      /* Emerald */
-        --warning-color: #f59e0b;      /* Amber */
-        --error-color: #ef4444;        /* Red */
-        --hover-bg: #f1f5f9;           /* Slate 100 */
+        /* Light Mode Colors */
+        --light-bg: #ffffff;
+        --light-bg-secondary: #f8fafc;
+        --light-text-primary: #131722;
+        --light-text-secondary: #787b86;
+        --light-border: #e2e8f0;
+        --light-accent: #2962ff;
+        --light-accent-hover: #1e53e5;
+        --light-card-bg: #ffffff;
+        --light-hover: #f1f5f9;
+        --light-success: #26a69a;
+        --light-warning: #f59e0b;
+        --light-error: #ef5350;
+        
+        /* Dark Mode Colors */
+        --dark-bg: #131722;
+        --dark-bg-secondary: #1e222d;
+        --dark-text-primary: #d1d4dc;
+        --dark-text-secondary: #787b86;
+        --dark-border: #2a2e39;
+        --dark-accent: #2962ff;
+        --dark-accent-hover: #1e53e5;
+        --dark-card-bg: #1e222d;
+        --dark-hover: #2a2e39;
+        --dark-success: #26a69a;
+        --dark-warning: #f59e0b;
+        --dark-error: #ef5350;
+    }
+    
+    /* Theme Detection and Application */
+    @media (prefers-color-scheme: light) {
+        :root {
+            --bg: var(--light-bg);
+            --bg-secondary: var(--light-bg-secondary);
+            --text-primary: var(--light-text-primary);
+            --text-secondary: var(--light-text-secondary);
+            --border: var(--light-border);
+            --accent: var(--light-accent);
+            --accent-hover: var(--light-accent-hover);
+            --card-bg: var(--light-card-bg);
+            --hover: var(--light-hover);
+            --success: var(--light-success);
+            --warning: var(--light-warning);
+            --error: var(--light-error);
+        }
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: var(--dark-bg);
+            --bg-secondary: var(--dark-bg-secondary);
+            --text-primary: var(--dark-text-primary);
+            --text-secondary: var(--dark-text-secondary);
+            --border: var(--dark-border);
+            --accent: var(--dark-accent);
+            --accent-hover: var(--dark-accent-hover);
+            --card-bg: var(--dark-card-bg);
+            --hover: var(--dark-hover);
+            --success: var(--dark-success);
+            --warning: var(--dark-warning);
+            --error: var(--dark-error);
+        }
     }
     
     /* Override Streamlit's default theme */
     .stApp {
-        background-color: var(--background-color) !important;
+        background-color: var(--bg) !important;
         color: var(--text-primary) !important;
     }
     
     /* Main container styling */
     .main {
-        background-color: var(--background-color) !important;
+        background-color: var(--bg) !important;
         font-family: 'Inter', sans-serif;
     }
     
     /* Header styling */
     .header {
-        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
-        color: white !important;
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
         padding: 2rem 0;
         margin-bottom: 2rem;
         text-align: center;
-        border-radius: 0 0 1rem 1rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-bottom: 1px solid var(--border);
     }
     
     /* Card styling */
     .card {
         background-color: var(--card-bg) !important;
         padding: 1.5rem;
-        border-radius: 1rem;
-        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        border: 1px solid var(--border);
         margin-bottom: 1rem;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
     
     /* Button styling */
     .stButton>button {
-        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
+        background-color: var(--accent) !important;
         color: white !important;
         border: none;
         padding: 0.75rem 1.5rem;
-        border-radius: 0.75rem;
+        border-radius: 0.25rem;
         font-weight: 500;
         transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
     }
     
     .stButton>button:hover {
-        background: linear-gradient(135deg, var(--primary-hover), var(--accent-color)) !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
+        background-color: var(--accent-hover) !important;
     }
     
     /* Exchange toggle styling */
@@ -104,19 +144,16 @@ st.markdown("""
     
     .exchange-toggle button {
         background: var(--card-bg) !important;
-        border: 2px solid var(--primary-color) !important;
-        color: var(--primary-color) !important;
+        border: 1px solid var(--accent) !important;
+        color: var(--accent) !important;
         padding: 0.75rem 1.5rem;
-        border-radius: 0.75rem;
+        border-radius: 0.25rem;
         font-weight: 500;
-        transition: all 0.2s ease;
     }
     
     .exchange-toggle button.active {
-        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
+        background: var(--accent) !important;
         color: white !important;
-        border: none !important;
-        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
     }
     
     /* Table styling */
@@ -128,57 +165,53 @@ st.markdown("""
         font-size: 0.9rem;
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
-        border-radius: 0.75rem;
+        border-radius: 0.25rem;
         overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     
     .dataframe th {
-        background-color: var(--hover-bg) !important;
+        background-color: var(--bg-secondary) !important;
         color: var(--text-primary) !important;
-        padding: 1rem;
+        padding: 0.75rem;
         font-weight: 600;
-        border-bottom: 2px solid var(--border-color);
+        border-bottom: 1px solid var(--border);
         text-align: left;
     }
     
     .dataframe td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--border-color);
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
         color: var(--text-secondary) !important;
     }
     
     .dataframe tr:hover {
-        background-color: var(--hover-bg) !important;
+        background-color: var(--hover) !important;
     }
     
     /* Alert styling */
     .stAlert {
-        border-radius: 0.75rem;
+        border-radius: 0.25rem;
         padding: 1rem;
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
     }
     
     /* Selectbox styling */
     .stSelectbox {
         background-color: var(--card-bg) !important;
         color: var(--text-primary) !important;
-        border-radius: 0.75rem;
     }
     
     /* Progress bar styling */
     .stProgress > div > div {
-        background: linear-gradient(135deg, var(--primary-color), var(--accent-color)) !important;
-        border-radius: 0.5rem;
+        background-color: var(--accent) !important;
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background-color: var(--card-bg) !important;
-        border-right: 1px solid var(--border-color);
+        background-color: var(--bg-secondary) !important;
+        border-right: 1px solid var(--border);
     }
     
     /* Text styling */

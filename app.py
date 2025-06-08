@@ -12,51 +12,52 @@ from utils import generate_tradingview_link
 
 # Page Configuration
 st.set_page_config(
-    page_title="Stock Screener Pro",
+    page_title="Stock Screener",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for modern styling
+# Custom CSS for clean, minimalist styling
 st.markdown("""
     <style>
     /* Main container styling */
     .main {
-        background-color: #f8f9fa;
+        background-color: #ffffff;
+        font-family: 'Inter', sans-serif;
     }
     
     /* Header styling */
     .header {
-        background: linear-gradient(90deg, #1a237e, #0d47a1);
-        color: white;
-        padding: 1rem;
-        border-radius: 10px;
+        background-color: #ffffff;
+        color: #333333;
+        padding: 2rem 0;
         margin-bottom: 2rem;
+        text-align: center;
     }
     
     /* Card styling */
     .card {
-        background-color: white;
+        background-color: #ffffff;
         padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
         margin-bottom: 1rem;
     }
     
     /* Button styling */
     .stButton>button {
-        background: linear-gradient(90deg, #1a237e, #0d47a1);
+        background-color: #2563eb;
         color: white;
         border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        transition: all 0.3s ease;
+        padding: 0.5rem 1.5rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.2s ease;
     }
     
     .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        background-color: #1d4ed8;
     }
     
     /* Exchange toggle styling */
@@ -69,15 +70,15 @@ st.markdown("""
     
     .exchange-toggle button {
         background: white;
-        border: 2px solid #1a237e;
-        color: #1a237e;
+        border: 1px solid #2563eb;
+        color: #2563eb;
         padding: 0.5rem 1.5rem;
-        border-radius: 25px;
-        transition: all 0.3s ease;
+        border-radius: 6px;
+        font-weight: 500;
     }
     
     .exchange-toggle button.active {
-        background: #1a237e;
+        background: #2563eb;
         color: white;
     }
     
@@ -86,26 +87,30 @@ st.markdown("""
         width: 100%;
         border-collapse: collapse;
         margin: 1rem 0;
+        font-size: 0.9rem;
     }
     
     .dataframe th {
-        background-color: #1a237e;
-        color: white;
+        background-color: #f8fafc;
+        color: #1e293b;
         padding: 0.75rem;
+        font-weight: 600;
+        border-bottom: 2px solid #e2e8f0;
     }
     
     .dataframe td {
         padding: 0.75rem;
-        border-bottom: 1px solid #e0e0e0;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
     }
     
     .dataframe tr:hover {
-        background-color: #f5f5f5;
+        background-color: #f8fafc;
     }
     
     /* Alert styling */
     .stAlert {
-        border-radius: 10px;
+        border-radius: 6px;
         padding: 1rem;
     }
     
@@ -116,7 +121,22 @@ st.markdown("""
     
     /* Progress bar styling */
     .stProgress > div > div {
-        background-color: #1a237e;
+        background-color: #2563eb;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background-color: #f8fafc;
+    }
+    
+    /* Text styling */
+    h1, h2, h3 {
+        color: #1e293b;
+        font-weight: 600;
+    }
+    
+    p {
+        color: #334155;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -128,38 +148,34 @@ if 'selected_exchange' not in st.session_state:
 # Header
 st.markdown("""
     <div class="header">
-        <h1 style="text-align: center; margin: 0;">📈 Stock Screener Pro</h1>
-        <p style="text-align: center; margin: 0;">Advanced Technical Analysis for NSE & BSE</p>
+        <h1>Stock Screener</h1>
+        <p>Advanced Technical Analysis for NSE & BSE</p>
     </div>
 """, unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### 🔐 Authentication")
+    st.markdown("### Authentication")
     user_id, api_key = load_credentials()
     
     if not user_id or not api_key:
-        st.markdown("#### Enter AliceBlue API Credentials")
+        st.markdown("Enter AliceBlue API Credentials")
         new_user_id = st.text_input("User ID", type="password")
         new_api_key = st.text_input("API Key", type="password")
         if st.button("Login", use_container_width=True):
             save_credentials(new_user_id, new_api_key)
-            st.success("API credentials saved! Refreshing...")
+            st.success("Credentials saved!")
             st.rerun()
     
     st.markdown("---")
-    st.markdown("### ℹ️ About")
+    st.markdown("### About")
     st.markdown("""
-        This screener uses advanced technical analysis to identify potential trading opportunities.
+        This screener uses technical analysis to identify potential trading opportunities.
         Please conduct your own due diligence before making any trading decisions.
     """)
-    
-    st.markdown("---")
-    st.markdown("### 🛠️ Settings")
-    st.markdown("Select your preferred exchange and stock list to begin screening.")
 
 # Main Content
-tabs = st.tabs(["📊 Stock Screener", "🛠️ Advanced Tools", "📈 Market Overview"])
+tabs = st.tabs(["Stock Screener", "Advanced Tools"])
 
 with tabs[0]:
     # Exchange Selection
@@ -183,15 +199,6 @@ with tabs[0]:
             st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
-
-    # Current Exchange Display
-    st.markdown(f"""
-        <div class="card">
-            <h2 style="text-align: center; color: #1a237e;">
-                {st.session_state.selected_exchange} Stock Screener
-            </h2>
-        </div>
-    """, unsafe_allow_html=True)
 
     # Initialize AliceBlue
     try:
@@ -242,12 +249,7 @@ with tabs[0]:
         if df.empty:
             st.warning(f"No stocks found for {title}")
         else:
-            st.markdown(f"""
-                <div class="card">
-                    <h3 style="color: #1a237e;">{title}</h3>
-                </div>
-            """, unsafe_allow_html=True)
-            
+            st.markdown(f"### {title}")
             if "Name" in df.columns:
                 df["Name"] = df["Name"].apply(
                     lambda x: generate_tradingview_link(x, st.session_state.selected_exchange)
@@ -259,14 +261,14 @@ with tabs[0]:
     
     with col1:
         selected_list = st.selectbox(
-            "Select Stock List:",
+            "Select Stock List",
             list(STOCK_LISTS.keys()),
-            help="Choose a predefined list of stocks to analyze"
+            help="Choose a list of stocks to analyze"
         )
     
     with col2:
         strategy = st.selectbox(
-            "Select Strategy:",
+            "Select Strategy",
             [
                 "EMA, RSI & Support Zone (Buy)",
                 "EMA, RSI & Resistance Zone (Sell)"
@@ -280,19 +282,15 @@ with tabs[0]:
         if not tokens:
             st.warning(f"No stocks found for {selected_list}.")
         else:
-            with st.spinner("Fetching and analyzing stocks..."):
+            with st.spinner("Analyzing stocks..."):
                 screened_stocks = fetch_screened_stocks(tokens, strategy)
             df = clean_and_display_data(screened_stocks, strategy)
             safe_display(df, strategy)
 
 with tabs[1]:
-    st.markdown("""
-        <div class="card">
-            <h2 style="color: #1a237e;">Advanced Technical Analysis Tools</h2>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### Advanced Tools")
     
-    st.subheader("RSI Checker for a Stock")
+    st.subheader("RSI Checker")
     col1, col2 = st.columns(2)
     
     with col1:
@@ -309,20 +307,4 @@ with tabs[1]:
         )
 
     if st.button("Check RSI", use_container_width=True):
-        st.info(f"Feature coming soon: RSI lookup for {stock_symbol} on {date}")
-
-with tabs[2]:
-    st.markdown("""
-        <div class="card">
-            <h2 style="color: #1a237e;">Market Overview</h2>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.info("Market overview features coming soon!")
-    st.markdown("""
-        Future features will include:
-        - Market breadth indicators
-        - Sector performance analysis
-        - Top gainers and losers
-        - Volume analysis
-    """) 
+        st.info(f"RSI lookup for {stock_symbol} on {date} coming soon") 

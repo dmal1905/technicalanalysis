@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from multiprocessing import Pool, cpu_count
+from functools import partial
 from alice_client import initialize_alice, save_credentials, load_credentials
 from advanced_analysis import (
     analyze_all_tokens_advanced,
@@ -15,12 +17,45 @@ st.set_page_config(
     page_title="Stock Screener",
     page_icon="📈",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
 )
 
-# Essential table styling only
+# Set theme configuration
 st.markdown("""
     <style>
+        /* Override Streamlit's default theme */
+        .stButton>button {
+            background-color: #2563eb !important;
+        }
+        .stButton>button:hover {
+            background-color: #1d4ed8 !important;
+        }
+        .stProgress > div > div {
+            background-color: #2563eb !important;
+        }
+        .stSelectbox > div > div {
+            background-color: #2563eb !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 2rem;
+        }
+        .stTabs [data-baseweb="tab"] {
+            height: 4rem;
+            white-space: pre-wrap;
+            background-color: #2563eb !important;
+            border-radius: 4px 4px 0 0;
+            gap: 1rem;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+        .stTabs [aria-selected="true"] {
+            background-color: #1d4ed8 !important;
+        }
         table { width: 100% !important; }
         th, td { padding: 10px !important; text-align: left !important; }
         td:nth-child(1) { min-width: 200px !important; }
@@ -48,6 +83,7 @@ def get_stock_lists_for_exchange(exchange):
 # Header
 st.markdown("""
     <div class="header">
+        <h1>Stock Screener</h1>
         <p>Advanced Technical Analysis for NSE & BSE</p>
     </div>
 """, unsafe_allow_html=True)
@@ -271,6 +307,20 @@ with tabs[0]:
             df = clean_and_display_data(screened_stocks, strategy)
             safe_display(df, strategy)
 
+def process_stock_chunk(chunk_data):
+    """Process a chunk of stocks using multiprocessing."""
+    alice, tokens, strategy, exchange = chunk_data
+    results = []
+    for token in tokens:
+        try:
+            result = analyze_stock(alice, token, strategy, exchange)
+            if result:
+                results.append(result)
+        except Exception as e:
+            print(f"Error analyzing stock {token}: {str(e)}")
+            continue
+    return results
+
 def screen_stocks():
     """Screen stocks based on selected criteria."""
     try:
@@ -288,38 +338,27 @@ def screen_stocks():
         status_text = st.empty()
         status_text.text("Starting stock analysis...")
         
-        # Calculate total batches with 200 stocks per batch
-        batch_size = 200
-        total_batches = (len(tokens) + batch_size - 1) // batch_size
+        # Calculate chunks for multiprocessing
+        num_processes = cpu_count() - 1  # Leave one CPU free
+        chunk_size = 200
+        chunks = [tokens[i:i + chunk_size] for i in range(0, len(tokens), chunk_size)]
+        total_chunks = len(chunks)
         
-        # Analyze stocks
+        # Prepare data for multiprocessing
+        chunk_data = [(alice, chunk, st.session_state.selected_strategy, st.session_state.selected_exchange) 
+                     for chunk in chunks]
+        
+        # Process chunks using multiprocessing
         results = []
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            for batch_num in range(total_batches):
+        with Pool(processes=num_processes) as pool:
+            for i, chunk_results in enumerate(pool.imap_unordered(process_stock_chunk, chunk_data)):
                 # Update progress
-                progress = (batch_num + 1) / total_batches
+                progress = (i + 1) / total_chunks
                 progress_bar.progress(progress)
-                status_text.text(f"Analyzing batch {batch_num + 1} of {total_batches}...")
+                status_text.text(f"Processing chunk {i + 1} of {total_chunks}...")
                 
-                # Process batch
-                start_idx = batch_num * batch_size
-                end_idx = min((batch_num + 1) * batch_size, len(tokens))
-                batch_tokens = tokens[start_idx:end_idx]
-                
-                # Submit batch for processing
-                future = executor.submit(
-                    analyze_stock_batch,
-                    alice,
-                    batch_tokens,
-                    st.session_state.selected_strategy,
-                    st.session_state.selected_exchange
-                )
-                
-                # Get results and extend
-                batch_results = future.result()
-                results.extend(batch_results)
-                
-                # Update status with matches found
+                # Extend results
+                results.extend(chunk_results)
                 status_text.text(f"Found {len(results)} matches so far...")
         
         # Complete progress
@@ -354,24 +393,19 @@ def screen_stocks():
         status_text.empty()
 
 def analyze_stock_batch(alice, tokens, strategy, exchange):
-    """Analyze a batch of stocks in parallel."""
+    """Analyze a batch of stocks in parallel using multiprocessing."""
+    num_processes = cpu_count() - 1  # Leave one CPU free
+    chunk_size = len(tokens) // num_processes + 1
+    chunks = [tokens[i:i + chunk_size] for i in range(0, len(tokens), chunk_size)]
+    
+    # Prepare data for multiprocessing
+    chunk_data = [(alice, chunk, strategy, exchange) for chunk in chunks]
+    
     results = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        # Create a list of futures
-        future_to_token = {
-            executor.submit(analyze_stock, alice, token, strategy, exchange): token 
-            for token in tokens
-        }
-        
-        # Process completed futures as they come in
-        for future in as_completed(future_to_token):
-            try:
-                result = future.result()
-                if result:
-                    results.append(result)
-            except Exception as e:
-                st.error(f"Error analyzing stock: {str(e)}")
-                continue
+    with Pool(processes=num_processes) as pool:
+        chunk_results = pool.map(process_stock_chunk, chunk_data)
+        for chunk_result in chunk_results:
+            results.extend(chunk_result)
     
     return results
 

@@ -9,7 +9,7 @@ from alice_client import get_cached_historical_data
 def analyze_stock_batch(alice, tokens, strategy, exchange='NSE', batch_size=50):
     """Analyze a batch of stocks in parallel."""
     results = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=50) as executor:
         future_to_token = {
             executor.submit(analyze_stock, alice, token, strategy, exchange): token
             for token in tokens[:batch_size]

@@ -18,9 +18,32 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS with TradingView-like color schemes
+# Initialize theme in session state
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'light'
+
+# Custom CSS with TradingView-like color schemes and theme toggle
 st.markdown("""
     <style>
+    /* Theme toggle button styling */
+    .theme-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .theme-toggle:hover {
+        background-color: var(--hover);
+    }
+    
+    .theme-toggle-icon {
+        font-size: 1.2rem;
+    }
+    
     /* TradingView-like color schemes */
     :root {
         /* Light Mode Colors */
@@ -52,39 +75,35 @@ st.markdown("""
         --dark-error: #ef5350;
     }
     
-    /* Theme Detection and Application */
-    @media (prefers-color-scheme: light) {
-        :root {
-            --bg: var(--light-bg);
-            --bg-secondary: var(--light-bg-secondary);
-            --text-primary: var(--light-text-primary);
-            --text-secondary: var(--light-text-secondary);
-            --border: var(--light-border);
-            --accent: var(--light-accent);
-            --accent-hover: var(--light-accent-hover);
-            --card-bg: var(--light-card-bg);
-            --hover: var(--light-hover);
-            --success: var(--light-success);
-            --warning: var(--light-warning);
-            --error: var(--light-error);
-        }
+    /* Theme Application */
+    [data-theme="light"] {
+        --bg: var(--light-bg);
+        --bg-secondary: var(--light-bg-secondary);
+        --text-primary: var(--light-text-primary);
+        --text-secondary: var(--light-text-secondary);
+        --border: var(--light-border);
+        --accent: var(--light-accent);
+        --accent-hover: var(--light-accent-hover);
+        --card-bg: var(--light-card-bg);
+        --hover: var(--light-hover);
+        --success: var(--light-success);
+        --warning: var(--light-warning);
+        --error: var(--light-error);
     }
     
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --bg: var(--dark-bg);
-            --bg-secondary: var(--dark-bg-secondary);
-            --text-primary: var(--dark-text-primary);
-            --text-secondary: var(--dark-text-secondary);
-            --border: var(--dark-border);
-            --accent: var(--dark-accent);
-            --accent-hover: var(--dark-accent-hover);
-            --card-bg: var(--dark-card-bg);
-            --hover: var(--dark-hover);
-            --success: var(--dark-success);
-            --warning: var(--dark-warning);
-            --error: var(--dark-error);
-        }
+    [data-theme="dark"] {
+        --bg: var(--dark-bg);
+        --bg-secondary: var(--dark-bg-secondary);
+        --text-primary: var(--dark-text-primary);
+        --text-secondary: var(--dark-text-secondary);
+        --border: var(--dark-border);
+        --accent: var(--dark-accent);
+        --accent-hover: var(--dark-accent-hover);
+        --card-bg: var(--dark-card-bg);
+        --hover: var(--dark-hover);
+        --success: var(--dark-success);
+        --warning: var(--dark-warning);
+        --error: var(--dark-error);
     }
     
     /* Override Streamlit's default theme */
@@ -254,6 +273,20 @@ st.markdown("""
         }
     }
     </style>
+    
+    <script>
+    // Theme toggle functionality
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        // Send theme change to Streamlit
+        window.parent.postMessage({
+            type: 'streamlit:setComponentValue',
+            value: newTheme
+        }, '*');
+    }
+    </script>
 """, unsafe_allow_html=True)
 
 # Initialize session state
@@ -296,11 +329,49 @@ with st.sidebar:
             st.rerun()
     
     st.markdown("---")
+    
+    # Theme Toggle
+    st.markdown("### Theme")
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
+        st.markdown(f'<div class="theme-toggle" onclick="toggleTheme()">{theme_icon}</div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown("Toggle Dark/Light Mode")
+    
+    st.markdown("---")
     st.markdown("### About")
     st.markdown("""
         This screener uses technical analysis to identify potential trading opportunities.
         Please conduct your own due diligence before making any trading decisions.
     """)
+
+# Set initial theme
+st.markdown(f'<script>document.documentElement.setAttribute("data-theme", "{st.session_state.theme}")</script>', unsafe_allow_html=True)
+
+# Theme change handler
+def on_theme_change():
+    if st.session_state.theme == "light":
+        st.session_state.theme = "dark"
+    else:
+        st.session_state.theme = "light"
+    st.rerun()
+
+# Listen for theme changes
+st.markdown("""
+    <script>
+    window.addEventListener('message', function(e) {
+        if (e.data.type === 'streamlit:setComponentValue') {
+            if (e.data.value === 'dark' || e.data.value === 'light') {
+                window.parent.postMessage({
+                    type: 'streamlit:componentChange',
+                    value: e.data.value
+                }, '*');
+            }
+        }
+    });
+    </script>
+""", unsafe_allow_html=True)
 
 # Main Content
 tabs = st.tabs(["Stock Screener"])

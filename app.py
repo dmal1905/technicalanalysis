@@ -289,33 +289,39 @@ def screen_stocks():
         status_text = st.empty()
         status_text.text("Starting stock analysis...")
         
-        # Calculate total batches
-        batch_size = 50
+        # Calculate total batches with 200 stocks per batch
+        batch_size = 200
         total_batches = (len(tokens) + batch_size - 1) // batch_size
         
         # Analyze stocks
         results = []
-        for batch_num in range(total_batches):
-            # Update progress
-            progress = (batch_num + 1) / total_batches
-            progress_bar.progress(progress)
-            status_text.text(f"Analyzing batch {batch_num + 1} of {total_batches}...")
-            
-            # Process batch
-            start_idx = batch_num * batch_size
-            end_idx = min((batch_num + 1) * batch_size, len(tokens))
-            batch_tokens = tokens[start_idx:end_idx]
-            
-            batch_results = analyze_stock_batch(
-                alice, 
-                batch_tokens, 
-                st.session_state.selected_strategy,
-                st.session_state.selected_exchange
-            )
-            results.extend(batch_results)
-            
-            # Update status with matches found
-            status_text.text(f"Found {len(results)} matches so far...")
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            for batch_num in range(total_batches):
+                # Update progress
+                progress = (batch_num + 1) / total_batches
+                progress_bar.progress(progress)
+                status_text.text(f"Analyzing batch {batch_num + 1} of {total_batches}...")
+                
+                # Process batch
+                start_idx = batch_num * batch_size
+                end_idx = min((batch_num + 1) * batch_size, len(tokens))
+                batch_tokens = tokens[start_idx:end_idx]
+                
+                # Submit batch for processing
+                future = executor.submit(
+                    analyze_stock_batch,
+                    alice,
+                    batch_tokens,
+                    st.session_state.selected_strategy,
+                    st.session_state.selected_exchange
+                )
+                
+                # Get results and extend
+                batch_results = future.result()
+                results.extend(batch_results)
+                
+                # Update status with matches found
+                status_text.text(f"Found {len(results)} matches so far...")
         
         # Complete progress
         progress_bar.progress(1.0)
@@ -347,6 +353,28 @@ def screen_stocks():
         st.error(f"Error during stock screening: {str(e)}")
         progress_bar.empty()
         status_text.empty()
+
+def analyze_stock_batch(alice, tokens, strategy, exchange):
+    """Analyze a batch of stocks in parallel."""
+    results = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        # Create a list of futures
+        future_to_token = {
+            executor.submit(analyze_stock, alice, token, strategy, exchange): token 
+            for token in tokens
+        }
+        
+        # Process completed futures as they come in
+        for future in as_completed(future_to_token):
+            try:
+                result = future.result()
+                if result:
+                    results.append(result)
+            except Exception as e:
+                st.error(f"Error analyzing stock: {str(e)}")
+                continue
+    
+    return results
 
 def clean_and_display_data(df):
     """Clean and format the data for display."""

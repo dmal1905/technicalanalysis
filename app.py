@@ -73,7 +73,8 @@ with st.sidebar:
         Please conduct your own due diligence before making any trading decisions.
     """)
 
-
+# Main Content
+tabs = st.tabs(["Stock Screener"])
 
 with tabs[0]:
     # Exchange Selection

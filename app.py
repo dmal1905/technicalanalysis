@@ -3,10 +3,7 @@ import pandas as pd
 import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from alice_client import initialize_alice, save_credentials, load_credentials
-from stock_analysis import (
-    analyze_all_tokens_bullish,
-    analyze_all_tokens_bearish
-)
+from advanced_analysis import analyze_all_tokens_advanced
 from stock_lists import STOCK_LISTS
 from utils import generate_tradingview_link
 
@@ -227,10 +224,7 @@ with tabs[0]:
             if not alice:
                 raise Exception("AliceBlue API is not initialized.")
             
-            if strategy == "EMA, RSI & Support Zone (Buy)":
-                return analyze_all_tokens_bullish(alice, tokens, exchange=st.session_state.selected_exchange)
-            elif strategy == "EMA, RSI & Resistance Zone (Sell)":
-                return analyze_all_tokens_bearish(alice, tokens, exchange=st.session_state.selected_exchange)
+            return analyze_all_tokens_advanced(alice, tokens, strategy, exchange=st.session_state.selected_exchange)
         except Exception as e:
             st.error(f"Error fetching stock data: {e}")
             return []
@@ -241,19 +235,18 @@ with tabs[0]:
             return pd.DataFrame()
         
         df = pd.DataFrame(data)
-        if strategy == "EMA, RSI & Support Zone (Buy)":
-            df["Close"] = df["Close"].astype(float).round(2)
-            df["Support"] = df["Support"].astype(float).round(2)
-            df["Distance_pct"] = df["Distance_pct"].astype(float).round(2)
-            df["RSI"] = df["RSI"].astype(float).round(2)
-        elif strategy == "EMA, RSI & Resistance Zone (Sell)":
-            df["Close"] = df["Close"].astype(float).round(2)
-            df["Resistance"] = df["Resistance"].astype(float).round(2)
-            df["Distance_pct"] = df["Distance_pct"].astype(float).round(2)
-            df["RSI"] = df["RSI"].astype(float).round(2)
-
-        if "Strength" in df.columns:
-            df = df.sort_values(by="Strength", ascending=False)
+        
+        # Convert numeric columns
+        df["Close"] = df["Close"].astype(float).round(2)
+        df["Volume"] = df["Volume"].astype(float).round(2)
+        df["Strength"] = df["Strength"].astype(float).round(2)
+        
+        # Convert lists to strings for display
+        df["Patterns"] = df["Patterns"].apply(lambda x: ", ".join(x) if x else "None")
+        df["Volume_Nodes"] = df["Volume_Nodes"].apply(lambda x: ", ".join(map(str, x[:3])) if x else "None")
+        
+        # Sort by strength
+        df = df.sort_values(by="Strength", ascending=False)
         
         return df
 
@@ -284,11 +277,45 @@ with tabs[0]:
         strategy = st.selectbox(
             "Select Strategy",
             [
-                "EMA, RSI & Support Zone (Buy)",
-                "EMA, RSI & Resistance Zone (Sell)"
+                "Price Action Breakout",
+                "Volume Profile Analysis",
+                "Market Structure Analysis",
+                "Multi-Factor Analysis"
             ],
             help="Choose a technical analysis strategy"
         )
+
+    # Strategy descriptions
+    strategy_descriptions = {
+        "Price Action Breakout": """
+            - Identifies strong breakouts with volume confirmation
+            - Analyzes candlestick patterns and price action
+            - Considers multiple timeframe confirmation
+            - Includes volume profile analysis
+        """,
+        "Volume Profile Analysis": """
+            - Identifies high-volume price levels
+            - Analyzes volume distribution
+            - Detects institutional buying/selling
+            - Includes volume-weighted price levels
+        """,
+        "Market Structure Analysis": """
+            - Analyzes market structure (HH/HL vs LH/LL)
+            - Identifies trend strength and direction
+            - Includes multiple timeframe analysis
+            - Considers market regime (trending vs ranging)
+        """,
+        "Multi-Factor Analysis": """
+            - Combines price action, volume, and market structure
+            - Includes relative strength analysis
+            - Considers sector rotation
+            - Integrates market breadth indicators
+        """
+    }
+
+    # Display strategy description
+    st.markdown("### Strategy Details")
+    st.markdown(strategy_descriptions[strategy])
 
     # Start Screening Button
     if st.button("Start Screening", use_container_width=True):

@@ -105,33 +105,33 @@ with st.sidebar:
 
 
 st.markdown('<div class="exchange-toggle">', unsafe_allow_html=True)
+
 col1, col2 = st.columns(2)
 
 with col1:
     if st.session_state.selected_exchange == 'NSE':
-        with st.container():
-            st.markdown('<div id="nse_active">', unsafe_allow_html=True)
-            if st.button("NSE", key="nse_btn", use_container_width=True):
-                st.session_state.selected_exchange = 'NSE'
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div id="nse_selected" class="custom-button">', unsafe_allow_html=True)
     else:
-        if st.button("NSE", key="nse_btn", use_container_width=True):
-            st.session_state.selected_exchange = 'NSE'
-            st.rerun()
+        st.markdown('<div class="custom-button">', unsafe_allow_html=True)
+
+    if st.button("NSE", key="nse_btn", help="Switch to NSE stocks", use_container_width=True):
+        st.session_state.selected_exchange = 'NSE'
+        st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
     if st.session_state.selected_exchange == 'BSE':
-        with st.container():
-            st.markdown('<div id="bse_active">', unsafe_allow_html=True)
-            if st.button("BSE", key="bse_btn", use_container_width=True):
-                st.session_state.selected_exchange = 'BSE'
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div id="bse_selected" class="custom-button">', unsafe_allow_html=True)
     else:
-        if st.button("BSE", key="bse_btn", use_container_width=True):
-            st.session_state.selected_exchange = 'BSE'
-            st.rerun()
+        st.markdown('<div class="custom-button">', unsafe_allow_html=True)
+
+    if st.button("BSE", key="bse_btn", help="Switch to BSE stocks", use_container_width=True):
+        st.session_state.selected_exchange = 'BSE'
+        st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 st.markdown('</div>', unsafe_allow_html=True)

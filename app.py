@@ -111,164 +111,164 @@ with st.sidebar:
     """)
 
 
-    st.markdown('<div class="exchange-toggle">', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
+st.markdown('<div class="exchange-toggle">', unsafe_allow_html=True)
+col1, col2 = st.columns(2)
 
-    with col1:
-        if st.button("NSE", key="nse_btn",
-                     help="Switch to NSE stocks",
-                     use_container_width=True,
-                     type="primary" if st.session_state.selected_exchange == 'NSE' else "secondary"):
-            st.session_state.selected_exchange = 'NSE'
-            st.rerun()
+with col1:
+    if st.button("NSE", key="nse_btn",
+                 help="Switch to NSE stocks",
+                 use_container_width=True,
+                 type="primary" if st.session_state.selected_exchange == 'NSE' else "secondary"):
+        st.session_state.selected_exchange = 'NSE'
+        st.rerun()
 
-    with col2:
-        if st.button("BSE", key="bse_btn",
-                     help="Switch to BSE stocks",
-                     use_container_width=True,
-                     type="primary" if st.session_state.selected_exchange == 'BSE' else "secondary"):
-            st.session_state.selected_exchange = 'BSE'
-            st.rerun()
+with col2:
+    if st.button("BSE", key="bse_btn",
+                 help="Switch to BSE stocks",
+                 use_container_width=True,
+                 type="primary" if st.session_state.selected_exchange == 'BSE' else "secondary"):
+        st.session_state.selected_exchange = 'BSE'
+        st.rerun()
 
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
+try:
+    alice = initialize_alice()
+except Exception as e:
+    st.error(f"Failed to initialize AliceBlue API: {e}")
+    alice = None
+
+@st.cache_data(ttl=300)
+def fetch_screened_stocks(tokens, strategy):
     try:
-        alice = initialize_alice()
+        if not alice:
+            raise Exception("AliceBlue API is not initialized.")
+        return analyze_all_tokens_advanced(alice, tokens, strategy, exchange=st.session_state.selected_exchange)
     except Exception as e:
-        st.error(f"Failed to initialize AliceBlue API: {e}")
-        alice = None
+        st.error(f"Error fetching stock data: {e}")
+        return []
 
-    @st.cache_data(ttl=300)
-    def fetch_screened_stocks(tokens, strategy):
-        try:
-            if not alice:
-                raise Exception("AliceBlue API is not initialized.")
-            return analyze_all_tokens_advanced(alice, tokens, strategy, exchange=st.session_state.selected_exchange)
-        except Exception as e:
-            st.error(f"Error fetching stock data: {e}")
-            return []
+def clean_and_display_data(data, strategy):
+    if not data or not isinstance(data, list):
+        return pd.DataFrame()
 
-    def clean_and_display_data(data, strategy):
-        if not data or not isinstance(data, list):
-            return pd.DataFrame()
-
-        df = pd.DataFrame(data)
-        df["Close"] = df["Close"].astype(float).round(2)
-        df["Strength"] = df["Strength"].astype(float).round(2)
-
-        if strategy == "Custom Price Movement":
-            df["Start_Price"] = df["Start_Price"].astype(float).round(2)
-            df["Percentage_Change"] = df["Percentage_Change"].astype(float).round(2)
-            df["Volatility"] = df["Volatility"].astype(float).round(2)
-        else:
-            df["Volume"] = df["Volume"].astype(float).round(2)
-            df["Patterns"] = df["Patterns"].apply(lambda x: ", ".join(x) if x else "None")
-            df["Volume_Nodes"] = df["Volume_Nodes"].apply(lambda x: ", ".join(map(str, x[:3])) if x else "None")
-
-        df = df.sort_values(by="Strength", ascending=False)
-        return df
-
-    def safe_display(df, title):
-        if df.empty:
-            st.warning(f"No stocks found for {title}")
-        else:
-            st.markdown(f"### {title}")
-            if "Name" in df.columns:
-                df["Name"] = df["Name"].apply(
-                    lambda x: generate_tradingview_link(x, st.session_state.selected_exchange)
-                )
-            st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        available_lists = get_stock_lists_for_exchange(st.session_state.selected_exchange)
-        selected_list = st.selectbox(
-            "Select Stock List",
-            list(available_lists.keys()),
-            help="Choose a list of stocks to analyze"
-        )
-
-    with col2:
-        strategy = st.selectbox(
-            "Select Strategy",
-            [
-                "Price Action Breakout",
-                "Volume Profile Analysis",
-                "Market Structure Analysis",
-                "Multi-Factor Analysis",
-                "Custom Price Movement"
-            ],
-            help="Choose a technical analysis strategy"
-        )
-
-    strategy_descriptions = {
-        "Price Action Breakout": """
-            - Identifies strong breakouts with volume confirmation
-            - Analyzes candlestick patterns and price action
-            - Considers multiple timeframe confirmation
-            - Includes volume profile analysis
-        """,
-        "Volume Profile Analysis": """
-            - Identifies high-volume price levels
-            - Analyzes volume distribution
-            - Detects institutional buying/selling
-            - Includes volume-weighted price levels
-        """,
-        "Market Structure Analysis": """
-            - Analyzes market structure (HH/HL vs LH/LL)
-            - Identifies trend strength and direction
-            - Includes multiple timeframe analysis
-            - Considers market regime (trending vs ranging)
-        """,
-        "Multi-Factor Analysis": """
-            - Combines price action, volume, and market structure
-            - Includes relative strength analysis
-            - Considers sector rotation
-            - Integrates market breadth indicators
-        """,
-        "Custom Price Movement": """
-            - Customizable price movement analysis
-            - Set your own duration and percentage targets
-            - Track stocks moving up or down by your specified amount
-            - Includes volume trend and volatility analysis
-        """
-    }
-
-    st.markdown("### Strategy Details")
-    st.markdown(strategy_descriptions[strategy])
+    df = pd.DataFrame(data)
+    df["Close"] = df["Close"].astype(float).round(2)
+    df["Strength"] = df["Strength"].astype(float).round(2)
 
     if strategy == "Custom Price Movement":
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            duration_days = st.number_input(
-                "Duration (Days)", min_value=1, max_value=365, value=30,
-                help="Number of days to look back"
-            )
-        with col2:
-            target_percentage = st.number_input(
-                "Target Percentage", min_value=0.1, max_value=1000.0,
-                value=10.0, step=0.1, help="Target percentage change"
-            )
-        with col3:
-            direction = st.selectbox(
-                "Direction", ["up", "down"], help="Price movement direction"
-            )
+        df["Start_Price"] = df["Start_Price"].astype(float).round(2)
+        df["Percentage_Change"] = df["Percentage_Change"].astype(float).round(2)
+        df["Volatility"] = df["Volatility"].astype(float).round(2)
+    else:
+        df["Volume"] = df["Volume"].astype(float).round(2)
+        df["Patterns"] = df["Patterns"].apply(lambda x: ", ".join(x) if x else "None")
+        df["Volume_Nodes"] = df["Volume_Nodes"].apply(lambda x: ", ".join(map(str, x[:3])) if x else "None")
 
-    if st.button("Start Screening", use_container_width=True):
-        tokens = available_lists.get(selected_list, [])
-        if not tokens:
-            st.warning(f"No stocks found for {selected_list}.")
-        else:
-            with st.spinner("Analyzing stocks..."):
-                if strategy == "Custom Price Movement":
-                    screened_stocks = analyze_all_tokens_custom(
-                        alice, tokens, duration_days, target_percentage, direction,
-                        exchange=st.session_state.selected_exchange
-                    )
-                else:
-                    screened_stocks = analyze_all_tokens_advanced(
-                        alice, tokens, strategy,
-                        exchange=st.session_state.selected_exchange
-                    )
-            df = clean_and_display_data(screened_stocks, strategy)
-            safe_display(df, strategy)
+    df = df.sort_values(by="Strength", ascending=False)
+    return df
+
+def safe_display(df, title):
+    if df.empty:
+        st.warning(f"No stocks found for {title}")
+    else:
+        st.markdown(f"### {title}")
+        if "Name" in df.columns:
+            df["Name"] = df["Name"].apply(
+                lambda x: generate_tradingview_link(x, st.session_state.selected_exchange)
+            )
+        st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+
+col1, col2 = st.columns(2)
+with col1:
+    available_lists = get_stock_lists_for_exchange(st.session_state.selected_exchange)
+    selected_list = st.selectbox(
+        "Select Stock List",
+        list(available_lists.keys()),
+        help="Choose a list of stocks to analyze"
+    )
+
+with col2:
+    strategy = st.selectbox(
+        "Select Strategy",
+        [
+            "Price Action Breakout",
+            "Volume Profile Analysis",
+            "Market Structure Analysis",
+            "Multi-Factor Analysis",
+            "Custom Price Movement"
+        ],
+        help="Choose a technical analysis strategy"
+    )
+
+strategy_descriptions = {
+    "Price Action Breakout": """
+        - Identifies strong breakouts with volume confirmation
+        - Analyzes candlestick patterns and price action
+        - Considers multiple timeframe confirmation
+        - Includes volume profile analysis
+    """,
+    "Volume Profile Analysis": """
+        - Identifies high-volume price levels
+        - Analyzes volume distribution
+        - Detects institutional buying/selling
+        - Includes volume-weighted price levels
+    """,
+    "Market Structure Analysis": """
+        - Analyzes market structure (HH/HL vs LH/LL)
+        - Identifies trend strength and direction
+        - Includes multiple timeframe analysis
+        - Considers market regime (trending vs ranging)
+    """,
+    "Multi-Factor Analysis": """
+        - Combines price action, volume, and market structure
+        - Includes relative strength analysis
+        - Considers sector rotation
+        - Integrates market breadth indicators
+    """,
+    "Custom Price Movement": """
+        - Customizable price movement analysis
+        - Set your own duration and percentage targets
+        - Track stocks moving up or down by your specified amount
+        - Includes volume trend and volatility analysis
+    """
+}
+
+st.markdown("### Strategy Details")
+st.markdown(strategy_descriptions[strategy])
+
+if strategy == "Custom Price Movement":
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        duration_days = st.number_input(
+            "Duration (Days)", min_value=1, max_value=365, value=30,
+            help="Number of days to look back"
+        )
+    with col2:
+        target_percentage = st.number_input(
+            "Target Percentage", min_value=0.1, max_value=1000.0,
+            value=10.0, step=0.1, help="Target percentage change"
+        )
+    with col3:
+        direction = st.selectbox(
+            "Direction", ["up", "down"], help="Price movement direction"
+        )
+
+if st.button("Start Screening", use_container_width=True):
+    tokens = available_lists.get(selected_list, [])
+    if not tokens:
+        st.warning(f"No stocks found for {selected_list}.")
+    else:
+        with st.spinner("Analyzing stocks..."):
+            if strategy == "Custom Price Movement":
+                screened_stocks = analyze_all_tokens_custom(
+                    alice, tokens, duration_days, target_percentage, direction,
+                    exchange=st.session_state.selected_exchange
+                )
+            else:
+                screened_stocks = analyze_all_tokens_advanced(
+                    alice, tokens, strategy,
+                    exchange=st.session_state.selected_exchange
+                )
+        df = clean_and_display_data(screened_stocks, strategy)
+        safe_display(df, strategy)

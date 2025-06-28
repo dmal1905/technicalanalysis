@@ -28,6 +28,7 @@ st.set_page_config(
 # Set theme configuration using teal (#7FE2D3)
 st.markdown("""
     <style>
+        /* Default button style */
         .stButton>button {
             background-color: #7FE2D3 !important;
             color: black !important;
@@ -35,35 +36,27 @@ st.markdown("""
         .stButton>button:hover {
             background-color: #6FD0C2 !important;
         }
-        .stProgress > div > div {
-            background-color: #7FE2D3 !important;
-        }
-        .stSelectbox > div > div {
-            background-color: #7FE2D3 !important;
+
+        /* NSE Button when selected */
+        #nse_active button {
+            background-color: #F28B82 !important;
             color: black !important;
         }
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 2rem;
+        #nse_active button:hover {
+            background-color: #E57373 !important;
         }
-        .stTabs [data-baseweb="tab"] {
-            height: 4rem;
-            white-space: pre-wrap;
-            background-color: #7FE2D3 !important;
-            border-radius: 4px 4px 0 0;
-            gap: 1rem;
-            padding-top: 10px;
-            padding-bottom: 10px;
+
+        /* BSE Button when selected */
+        #bse_active button {
+            background-color: #FFD580 !important;
             color: black !important;
         }
-        .stTabs [aria-selected="true"] {
-            background-color: #6FD0C2 !important;
+        #bse_active button:hover {
+            background-color: #FFC04D !important;
         }
-        table { width: 100% !important; }
-        th, td { padding: 10px !important; text-align: left !important; }
-        td:nth-child(1) { min-width: 200px !important; }
-        a { white-space: nowrap; }
     </style>
 """, unsafe_allow_html=True)
+
 
 # Initialize session state
 if 'selected_exchange' not in st.session_state:
@@ -115,20 +108,31 @@ st.markdown('<div class="exchange-toggle">', unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("NSE", key="nse_btn",
-                 help="Switch to NSE stocks",
-                 use_container_width=True,
-                 type="primary" if st.session_state.selected_exchange == 'NSE' else "secondary"):
-        st.session_state.selected_exchange = 'NSE'
-        st.rerun()
+    if st.session_state.selected_exchange == 'NSE':
+        with st.container():
+            st.markdown('<div id="nse_active">', unsafe_allow_html=True)
+            if st.button("NSE", key="nse_btn", use_container_width=True):
+                st.session_state.selected_exchange = 'NSE'
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        if st.button("NSE", key="nse_btn", use_container_width=True):
+            st.session_state.selected_exchange = 'NSE'
+            st.rerun()
 
 with col2:
-    if st.button("BSE", key="bse_btn",
-                 help="Switch to BSE stocks",
-                 use_container_width=True,
-                 type="primary" if st.session_state.selected_exchange == 'BSE' else "secondary"):
-        st.session_state.selected_exchange = 'BSE'
-        st.rerun()
+    if st.session_state.selected_exchange == 'BSE':
+        with st.container():
+            st.markdown('<div id="bse_active">', unsafe_allow_html=True)
+            if st.button("BSE", key="bse_btn", use_container_width=True):
+                st.session_state.selected_exchange = 'BSE'
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        if st.button("BSE", key="bse_btn", use_container_width=True):
+            st.session_state.selected_exchange = 'BSE'
+            st.rerun()
+
 
 st.markdown('</div>', unsafe_allow_html=True)
 

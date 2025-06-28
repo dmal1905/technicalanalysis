@@ -28,32 +28,39 @@ st.set_page_config(
 # Set theme configuration using teal (#7FE2D3)
 st.markdown("""
     <style>
-        .custom-button>button {
-            background-color: #7FE2D3 !important;
-            color: black !important;
-        }
-        .custom-button>button:hover {
-            background-color: #6FD0C2 !important;
-            color: black !important;
+        .button-box {
+            margin-bottom: 1rem;
         }
 
-        #nse_selected button {
-            background-color: #F28B82 !important;
+        /* NSE Selected - Aqua */
+        .nse-btn button {
+            background-color: #A7D6D6 !important;
             color: black !important;
         }
-        #nse_selected button:hover {
-            background-color: #E57373 !important;
+        .nse-btn button:hover {
+            background-color: #94CACA !important;
         }
 
-        #bse_selected button {
-            background-color: #FFD580 !important;
+        /* BSE Selected - Peach */
+        .bse-btn button {
+            background-color: #F9D5C2 !important;
             color: black !important;
         }
-        #bse_selected button:hover {
-            background-color: #FFC04D !important;
+        .bse-btn button:hover {
+            background-color: #F2C0AC !important;
+        }
+
+        /* Inactive Button - Blue Gray */
+        .default-btn button {
+            background-color: #DDEBF1 !important;
+            color: black !important;
+        }
+        .default-btn button:hover {
+            background-color: #CFE0E8 !important;
         }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
@@ -108,27 +115,19 @@ st.markdown('<div class="exchange-toggle">', unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.session_state.selected_exchange == 'NSE':
-        st.markdown('<div id="nse_selected" class="custom-button">', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="custom-button">', unsafe_allow_html=True)
-
+    btn_class = "nse-btn" if st.session_state.selected_exchange == 'NSE' else "default-btn"
+    st.markdown(f'<div class="button-box {btn_class}">', unsafe_allow_html=True)
     if st.button("NSE", key="nse_btn", help="Switch to NSE stocks", use_container_width=True):
         st.session_state.selected_exchange = 'NSE'
         st.rerun()
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    if st.session_state.selected_exchange == 'BSE':
-        st.markdown('<div id="bse_selected" class="custom-button">', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="custom-button">', unsafe_allow_html=True)
-
+    btn_class = "bse-btn" if st.session_state.selected_exchange == 'BSE' else "default-btn"
+    st.markdown(f'<div class="button-box {btn_class}">', unsafe_allow_html=True)
     if st.button("BSE", key="bse_btn", help="Switch to BSE stocks", use_container_width=True):
         st.session_state.selected_exchange = 'BSE'
         st.rerun()
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 

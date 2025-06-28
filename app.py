@@ -28,34 +28,33 @@ st.set_page_config(
 # Set theme configuration using teal (#7FE2D3)
 st.markdown("""
     <style>
-        /* Default button style */
-        .stButton>button {
+        .custom-button>button {
             background-color: #7FE2D3 !important;
             color: black !important;
         }
-        .stButton>button:hover {
+        .custom-button>button:hover {
             background-color: #6FD0C2 !important;
+            color: black !important;
         }
 
-        /* NSE Button when selected */
-        #nse_active button {
+        #nse_selected button {
             background-color: #F28B82 !important;
             color: black !important;
         }
-        #nse_active button:hover {
+        #nse_selected button:hover {
             background-color: #E57373 !important;
         }
 
-        /* BSE Button when selected */
-        #bse_active button {
+        #bse_selected button {
             background-color: #FFD580 !important;
             color: black !important;
         }
-        #bse_active button:hover {
+        #bse_selected button:hover {
             background-color: #FFC04D !important;
         }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 # Initialize session state

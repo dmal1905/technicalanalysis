@@ -110,10 +110,7 @@ with st.sidebar:
         Please conduct your own due diligence before making any trading decisions.
     """)
 
-# Main Content
-tabs = st.tabs(["Stock Screener"])
 
-with tabs[0]:
     st.markdown('<div class="exchange-toggle">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
 
